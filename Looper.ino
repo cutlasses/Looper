@@ -27,7 +27,7 @@ struct IO
 
 IO io;
 
-SD_AUDIO_RECORDER    audio_recorder;
+SD_AUDIO_RECORDER audio_recorder;
 
 AudioConnection   patch_cord_1( io.audio_input, 0, audio_recorder, 0 );
 AudioConnection   patch_cord_2( audio_recorder, 0, io.audio_output, 0 );

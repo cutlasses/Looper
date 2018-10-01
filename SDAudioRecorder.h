@@ -4,7 +4,13 @@
 
 class SD_AUDIO_RECORDER : public AudioStream
 {
-    audio_block_t*  m_input_queue_array[1];
+  enum class MODE
+  {
+    PLAY,
+    STOP,
+    RECORD,
+    OVERDUB,
+  };
   
 public:
 
@@ -13,12 +19,28 @@ public:
   virtual void      update() override;
   
   void              play();
+  void              play_file( const char* filename );
   void              stop();
   void              record();
 
 private:
 
-  AudioRecordQueue  sd_record_queue;      // need to expose these for the AudioConnection
-  AudioPlaySdRaw    sd_play_back;
+  audio_block_t*    m_input_queue_array[1];
+
+  MODE              m_mode;
+  const char*       m_playback_file;
+
+  File              m_recorded_audio;
+
+  AudioRecordQueue  m_sd_record_queue;      // need to expose these for the AudioConnection
+  AudioPlaySdRaw    m_sd_play_back;
+
+  void              start_recording();
+  void              update_recording();
+  void              stop_recording();
+
+  void              start_playing();
+  void              update_playing();
+  void              stop_playing();
 };
 
