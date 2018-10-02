@@ -14,7 +14,23 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
 
 void SD_AUDIO_RECORDER::update()
 {
-  
+  switch( m_mode )
+  {
+    case MODE::PLAY:
+    {
+      update_playing();
+      break; 
+    }
+    case MODE::RECORD:
+    {
+      update_recording();
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
 }
   
 void SD_AUDIO_RECORDER::play()
@@ -35,7 +51,23 @@ void SD_AUDIO_RECORDER::play_file( const char* filename )
 
 void SD_AUDIO_RECORDER::stop()
 {
-  stop_playing();
+  switch( m_mode )
+  {
+    case MODE::PLAY:
+    {
+      stop_playing();
+      break; 
+    }
+    case MODE::RECORD:
+    {
+      stop_recording();
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
 
   m_mode = MODE::STOP;
 }
@@ -87,11 +119,36 @@ void SD_AUDIO_RECORDER::start_recording()
 
 void SD_AUDIO_RECORDER::update_recording()
 {
-  
+  if( m_sd_record_queue.available() >= 2 )
+  {
+    byte buffer[512]; // arduino library most efficient whith full 512 sector size writes
+
+    // write 2 x 256 byte blocks to buffer
+    memcpy( buffer, m_sd_record_queue.readBuffer(), 256);
+    m_sd_record_queue.freeBuffer();
+    memcpy( buffer + 256, m_sd_record_queue.readBuffer(), 256);
+    m_sd_record_queue.freeBuffer();
+
+    m_recorded_audio.write( buffer, 512 );
+  }
 }
 
 void SD_AUDIO_RECORDER::stop_recording()
 {
   m_sd_record_queue.end();
+
+  if( m_mode == MODE::RECORD )
+  {
+    // empty the record queue
+    while( m_sd_record_queue.available() > 0 )
+    {
+      m_recorded_audio.write( reinterpret_cast<byte*>(m_sd_record_queue.readBuffer()), 256 );
+      m_sd_record_queue.freeBuffer();
+    }
+
+    m_recorded_audio.close();
+  }
+
+  m_mode = MODE::STOP;
 }
 
