@@ -5,9 +5,11 @@ constexpr const char* RECORDING_FILENAME = "RECORD.RAW";
 SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   AudioStream( 1, m_input_queue_array ),
   m_mode( MODE::STOP ),
-  m_recorded_audio(),
-  m_sd_record_queue(),
-  m_sd_play_back() 
+  m_recorded_audio_file(),
+  m_play_back_audio_file(),
+  m_play_back_file_size(0),
+  m_play_back_file_offset(0),
+  m_sd_record_queue()
 {
 
 }
@@ -37,16 +39,21 @@ void SD_AUDIO_RECORDER::play()
 {
   m_playback_file = RECORDING_FILENAME;
 
-  m_mode = MODE::PLAY;
-
-  start_playing();
+  play_file( RECORDING_FILENAME );
 }
 
 void SD_AUDIO_RECORDER::play_file( const char* filename )
 {
   m_playback_file = filename;
 
-  m_mode = MODE::PLAY;
+  if( start_playing() )
+  {
+    m_mode = MODE::PLAY;
+  }
+  else
+  {
+    m_mode = MODE::STOP;
+  }
 }
 
 void SD_AUDIO_RECORDER::stop()
@@ -79,26 +86,103 @@ void SD_AUDIO_RECORDER::record()
   m_mode = MODE::RECORD;
 }
 
-void SD_AUDIO_RECORDER::start_playing()
+bool SD_AUDIO_RECORDER::start_playing()
 {
-  // NOTE - SD PLAY BACK NEEDS CONNECTING TO AUDIO GRAPH
-  // replace with code from sd playback directly
-  m_sd_play_back.play( m_playback_file );
+  // copied from https://github.com/PaulStoffregen/Audio/blob/master/play_sd_raw.cpp
+  stop_playing();
+#if defined(HAS_KINETIS_SDHC)
+  if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStartUsingSPI();
+#else
+  AudioStartUsingSPI();
+#endif
+  __disable_irq();
+  m_play_back_audio_file = SD.open( m_playback_file );
+  __enable_irq();
+  
+  if( !m_play_back_audio_file )
+  {
+    //Serial.println("unable to open file");
+#if defined(HAS_KINETIS_SDHC)
+      if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStopUsingSPI();
+#else
+      AudioStopUsingSPI();
+#endif
+
+    return false;
+  }
+  
+  m_play_back_file_size = m_play_back_audio_file.size();
+  m_play_back_file_offset = 0;
+  //Serial.println("able to open file");
+
+  return true;
 }
 
 void SD_AUDIO_RECORDER::update_playing()
 {
-  if( !m_sd_play_back.isPlaying() )
+  // only update if we're playing
+  if( m_mode != MODE::PLAY )
   {
-    stop_playing();
+    // is this possible?
+    return;
+  }
 
+  audio_block_t *block;
+
+  // allocate the audio blocks to transmit
+  block = allocate();
+  if( block == nullptr )
+  {
+    return;
+  }
+
+  if( m_play_back_audio_file.available() )
+  {
+    // we can read more data from the file...
+    const uint32_t n = m_play_back_audio_file.read( block->data, AUDIO_BLOCK_SAMPLES*2 );
+    m_play_back_file_offset += n;
+    for( int i = n/2; i < AUDIO_BLOCK_SAMPLES; i++ )
+    {
+      block->data[i] = 0;
+    }
+    transmit(block);
+  }
+  else
+  {
+    m_play_back_audio_file.close();
+    
+#if defined(HAS_KINETIS_SDHC)
+      if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStopUsingSPI();
+#else
+      AudioStopUsingSPI();
+#endif
     m_mode = MODE::STOP;
   }
+  
+  release(block);
 }
 
 void SD_AUDIO_RECORDER::stop_playing()
 {
-  m_sd_play_back.stop();
+  __disable_irq();
+  
+  if( m_mode == MODE::PLAY )
+  {
+    m_mode = MODE::STOP;
+    
+    __enable_irq();
+    m_play_back_audio_file.close();
+    
+#if defined(HAS_KINETIS_SDHC)
+      if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStopUsingSPI();
+#else
+      AudioStopUsingSPI();
+#endif
+  }
+  else
+  {
+    __enable_irq();
+  }
 }
 
 void SD_AUDIO_RECORDER::start_recording()
@@ -109,9 +193,9 @@ void SD_AUDIO_RECORDER::start_recording()
     SD.remove( RECORDING_FILENAME ); 
   } 
   
-  m_recorded_audio = SD.open( RECORDING_FILENAME, FILE_WRITE );
+  m_recorded_audio_file = SD.open( RECORDING_FILENAME, FILE_WRITE );
 
-  if( m_recorded_audio )
+  if( m_recorded_audio_file )
   {
     m_sd_record_queue.begin();
   }  
@@ -129,7 +213,7 @@ void SD_AUDIO_RECORDER::update_recording()
     memcpy( buffer + 256, m_sd_record_queue.readBuffer(), 256);
     m_sd_record_queue.freeBuffer();
 
-    m_recorded_audio.write( buffer, 512 );
+    m_recorded_audio_file.write( buffer, 512 );
   }
 }
 
@@ -142,11 +226,11 @@ void SD_AUDIO_RECORDER::stop_recording()
     // empty the record queue
     while( m_sd_record_queue.available() > 0 )
     {
-      m_recorded_audio.write( reinterpret_cast<byte*>(m_sd_record_queue.readBuffer()), 256 );
+      m_recorded_audio_file.write( reinterpret_cast<byte*>(m_sd_record_queue.readBuffer()), 256 );
       m_sd_record_queue.freeBuffer();
     }
 
-    m_recorded_audio.close();
+    m_recorded_audio_file.close();
   }
 
   m_mode = MODE::STOP;

@@ -30,16 +30,19 @@ private:
   MODE              m_mode;
   const char*       m_playback_file;
 
-  File              m_recorded_audio;
+  File              m_recorded_audio_file;
+  File              m_play_back_audio_file;
+  uint32_t          m_play_back_file_size;
+  uint32_t          m_play_back_file_offset;
+  
 
   AudioRecordQueue  m_sd_record_queue;      // need to expose these for the AudioConnection
-  AudioPlaySdRaw    m_sd_play_back;
 
   void              start_recording();
   void              update_recording();
   void              stop_recording();
 
-  void              start_playing();
+  bool              start_playing();
   void              update_playing();
   void              stop_playing();
 };
