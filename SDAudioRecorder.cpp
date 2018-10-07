@@ -101,7 +101,7 @@ bool SD_AUDIO_RECORDER::start_playing()
   
   if( !m_play_back_audio_file )
   {
-    //Serial.println("unable to open file");
+    Serial.println("Unable to open file");
 #if defined(HAS_KINETIS_SDHC)
       if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStopUsingSPI();
 #else
@@ -110,10 +110,12 @@ bool SD_AUDIO_RECORDER::start_playing()
 
     return false;
   }
-  
+
+  Serial.println("File loaded");
   m_play_back_file_size = m_play_back_audio_file.size();
   m_play_back_file_offset = 0;
-  //Serial.println("able to open file");
+  Serial.print("File open - file size: ");
+  Serial.print(m_play_back_file_size);
 
   return true;
 }

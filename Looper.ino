@@ -87,9 +87,16 @@ void setup()
   }
 
   Serial.print("Setup finished!\n");
+  delay(500);
 }
 
 void loop()
 {
+  static bool start = false;
+  if( !start )
+  {
+    start = true;
 
+    audio_recorder.play_file( "drumloop.raw" );
+  }
 }
