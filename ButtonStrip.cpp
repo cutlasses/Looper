@@ -3,7 +3,7 @@
 #include "ButtonStrip.h"
 
 
-constexpr int NUM_STEPS(8);
+constexpr int NUM_SEGMENTS(8);
  
 BUTTON_STRIP::BUTTON_STRIP( int i2c_address ) :
   m_i2c_address( i2c_address )
@@ -15,7 +15,7 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
 {
   if( time_ms > m_next_step_time_stamp_ms )
   {
-    if( ++m_step_num >= NUM_STEPS )
+    if( ++m_step_num >= NUM_SEGMENTS )
     {
       m_step_num = 0;
     }
@@ -24,7 +24,7 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
   }
 
   bool step_triggered = false;
-  for( int i = 0; i < NUM_STEPS; ++i )
+  for( int i = 0; i < NUM_SEGMENTS; ++i )
   {
     const uint8_t bit_on = 1 << i;
     if( m_switch_values & bit_on )
@@ -56,4 +56,9 @@ void BUTTON_STRIP::set_step_length( uint32_t step_length_ms )
 {
   m_step_length_ms = step_length_ms;
 }
+
+ int BUTTON_STRIP::num_segments() const
+ {
+  return NUM_SEGMENTS;
+ }
 

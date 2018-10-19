@@ -18,5 +18,7 @@ public:
   
   bool          update( uint32_t time_ms, uint32_t& activated_segment );
   void          set_step_length( uint32_t step_length_ms );
+
+  int           num_segments() const;
 };
 

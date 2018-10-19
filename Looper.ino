@@ -109,9 +109,13 @@ void loop()
   {
     start = true;
 
-    audio_recorder.play_file( "drumloop.raw" );
+    audio_recorder.play_file( "drumloop.raw", true );
   }
 
   uint32_t segment;
-  button_strip.update( time_ms, segment );
+  if( button_strip.update( time_ms, segment ) )
+  {
+    const float t = segment / static_cast<float>(button_strip.num_segments());
+    //audio_recorder.set_read_position( t );
+  }
 }

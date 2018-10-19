@@ -9,6 +9,7 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   m_play_back_audio_file(),
   m_play_back_file_size(0),
   m_play_back_file_offset(0),
+  m_looping(false),
   m_sd_record_queue()
 {
 
@@ -21,6 +22,11 @@ void SD_AUDIO_RECORDER::update()
     case MODE::PLAY:
     {
       update_playing();
+
+      if( m_looping && m_mode == MODE::STOP )
+      {
+        start_playing();
+      }
       break; 
     }
     case MODE::RECORD:
@@ -37,14 +43,15 @@ void SD_AUDIO_RECORDER::update()
   
 void SD_AUDIO_RECORDER::play()
 {
-  m_playback_file = RECORDING_FILENAME;
+  m_play_back_file = RECORDING_FILENAME;
 
-  play_file( RECORDING_FILENAME );
+  play_file( RECORDING_FILENAME, true );
 }
 
-void SD_AUDIO_RECORDER::play_file( const char* filename )
+void SD_AUDIO_RECORDER::play_file( const char* filename, bool loop )
 {
-  m_playback_file = filename;
+  m_play_back_file = filename;
+  m_looping = loop;
 
   if( start_playing() )
   {
@@ -86,6 +93,15 @@ void SD_AUDIO_RECORDER::record()
   m_mode = MODE::RECORD;
 }
 
+void SD_AUDIO_RECORDER::set_read_position( float t )
+{
+ if( m_mode == MODE::PLAY )
+ {
+  const uint32_t file_pos = m_play_back_file_size * t;
+  m_play_back_audio_file.seek( file_pos );
+ }
+}
+
 bool SD_AUDIO_RECORDER::start_playing()
 {
   // copied from https://github.com/PaulStoffregen/Audio/blob/master/play_sd_raw.cpp
@@ -96,7 +112,7 @@ bool SD_AUDIO_RECORDER::start_playing()
   AudioStartUsingSPI();
 #endif
   __disable_irq();
-  m_play_back_audio_file = SD.open( m_playback_file );
+  m_play_back_audio_file = SD.open( m_play_back_file );
   __enable_irq();
   
   if( !m_play_back_audio_file )
