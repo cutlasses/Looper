@@ -122,13 +122,6 @@ bool SD_AUDIO_RECORDER::start_playing()
 
 void SD_AUDIO_RECORDER::update_playing()
 {
-  // only update if we're playing
-  if( m_mode != MODE::PLAY )
-  {
-    // is this possible?
-    return;
-  }
-
   audio_block_t *block;
 
   // allocate the audio blocks to transmit

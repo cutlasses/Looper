@@ -4,11 +4,15 @@
 #include <SPI.h>
 #include <SD.h>
 #include <SerialFlash.h>
+
+#include "ButtonStrip.h"
 #include "SDAudioRecorder.h"
 
 constexpr int SDCARD_CS_PIN    = BUILTIN_SDCARD;
 constexpr int SDCARD_MOSI_PIN  = 11;  // not actually used CAN I DELETE?
 constexpr int SDCARD_SCK_PIN   = 13;  // not actually used
+
+constexpr int I2C_ADDRESS(0x01); 
 
 // wrap in a struct to ensure initialisation order
 struct IO
@@ -32,14 +36,16 @@ SD_AUDIO_RECORDER audio_recorder;
 AudioConnection   patch_cord_1( io.audio_input, 0, audio_recorder, 0 );
 AudioConnection   patch_cord_2( audio_recorder, 0, io.audio_output, 0 );
 
+BUTTON_STRIP      button_strip( I2C_ADDRESS );
+
 //////////////////////////////////////
 
 void set_adc1_to_3v3()
 {
-  ADC1_SC3 = 0; // cancel calibration
+  ADC1_SC3 = 0;                 // cancel calibration
   ADC1_SC2 = ADC_SC2_REFSEL(0); // vcc/ext ref 3.3v
 
-  ADC1_SC3 = ADC_SC3_CAL;  // begin calibration
+  ADC1_SC3 = ADC_SC3_CAL;       // begin calibration
 
   uint16_t sum;
 
@@ -86,12 +92,18 @@ void setup()
     }
   }
 
+  Wire.begin( I2C_ADDRESS );
+
+  button_strip.set_step_length( 300 ); // remove once time extracted from sample
+
   Serial.print("Setup finished!\n");
   delay(500);
 }
 
 void loop()
 {
+  uint64_t time_ms = millis();
+  
   static bool start = false;
   if( !start )
   {
@@ -99,4 +111,7 @@ void loop()
 
     audio_recorder.play_file( "drumloop.raw" );
   }
+
+  uint32_t segment;
+  button_strip.update( time_ms, segment );
 }
