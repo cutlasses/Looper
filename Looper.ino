@@ -154,22 +154,12 @@ void setup()
   button_strip.set_step_length( 300 ); // remove once time extracted from sample
 
   Serial.print("Setup finished!\n");
-  delay(5000);
+  delay(500);
 }
 
 void loop()
 {
   uint64_t time_ms = millis();
-
-  /*
-  static bool start = false;
-  if( !start )
-  {
-    start = true;
-
-    audio_recorder.play_file( "drumloop.raw", true );
-  }
-  */
 
   looper_interface.update( io.adc, time_ms );
 

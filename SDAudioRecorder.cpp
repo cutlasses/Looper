@@ -37,7 +37,9 @@ void SD_AUDIO_RECORDER::update()
 
       if( m_looping && m_mode == MODE::STOP )
       {
+        Serial.println("LOOP");
         start_playing();
+        m_mode = MODE::PLAY;
       }
       break; 
     }
@@ -62,6 +64,7 @@ void SD_AUDIO_RECORDER::play()
 
 void SD_AUDIO_RECORDER::play_file( const char* filename, bool loop )
 {
+  // NOTE - should this be delaying call to start_playing() until update?
   m_play_back_file = filename;
   m_looping = loop;
 
@@ -144,7 +147,8 @@ bool SD_AUDIO_RECORDER::start_playing()
     return false;
   }
 
-  Serial.println("File loaded");
+  Serial.print("File loaded ");
+  Serial.println(m_play_back_file);
   m_play_back_file_size = m_play_back_audio_file.size();
   m_play_back_file_offset = 0;
   Serial.print("File open - file size: ");
