@@ -2,13 +2,14 @@
 
 #include "ButtonStrip.h"
 
-
-constexpr int NUM_SEGMENTS(8);
  
 BUTTON_STRIP::BUTTON_STRIP( int i2c_address ) :
   m_i2c_address( i2c_address )
 {
-  
+  for( int i = 0; i < NUM_SEGMENTS; ++i )
+  {
+    m_switch_time_stamps[i] = 0;
+  }
 }
 
 bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
@@ -27,13 +28,19 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
   for( int i = 0; i < NUM_SEGMENTS; ++i )
   {
     const uint8_t bit_on = 1 << i;
+    uint64_t& time_stamp = m_switch_time_stamps[i];
     if( m_switch_values & bit_on )
     {
       //Serial.print("Button press ");
       //Serial.println(i);
-      m_step_num = i;
-      activated_segment = i;
-      step_triggered = true;
+      if( time_ms - time_stamp > BUTTON_DEBOUNCE_MS )
+      {
+        m_step_num = i;
+        activated_segment = i;
+        step_triggered = true;
+      }
+      time_stamp = time_ms;
+            
       //next_step_time_stamp = millis() + step_time_ms;
       break; // only interested in the lowest button
     }

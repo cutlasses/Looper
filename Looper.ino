@@ -116,6 +116,6 @@ void loop()
   if( button_strip.update( time_ms, segment ) )
   {
     const float t = segment / static_cast<float>(button_strip.num_segments());
-    //audio_recorder.set_read_position( t );
+    audio_recorder.set_read_position( t );
   }
 }

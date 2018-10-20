@@ -37,6 +37,9 @@ private:
   uint32_t          m_play_back_file_size;
   uint32_t          m_play_back_file_offset;
 
+  uint32_t          m_jump_position;
+  bool              m_jump_pending;
+
   bool              m_looping;
   
 

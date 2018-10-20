@@ -9,6 +9,8 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   m_play_back_audio_file(),
   m_play_back_file_size(0),
   m_play_back_file_offset(0),
+  m_jump_position(0),
+  m_jump_pending(false),
   m_looping(false),
   m_sd_record_queue()
 {
@@ -21,6 +23,16 @@ void SD_AUDIO_RECORDER::update()
   {
     case MODE::PLAY:
     {
+      if( m_jump_pending )
+      {
+        if( m_play_back_audio_file.seek( m_jump_position ) )
+        {
+          m_jump_pending = false;
+          m_play_back_file_offset = m_jump_position;
+          Serial.println("Jump");
+        }
+      }
+      
       update_playing();
 
       if( m_looping && m_mode == MODE::STOP )
@@ -97,8 +109,13 @@ void SD_AUDIO_RECORDER::set_read_position( float t )
 {
  if( m_mode == MODE::PLAY )
  {
-  const uint32_t file_pos = m_play_back_file_size * t;
-  m_play_back_audio_file.seek( file_pos );
+  const uint32_t block_size   = 2; // AUDIO_BLOCK_SAMPLES
+  const uint32_t file_pos     = m_play_back_file_size * t;
+  const uint32_t block_rem    = file_pos % block_size;
+  
+  
+  m_jump_pending  = true;
+  m_jump_position = file_pos + block_rem;
  }
 }
 
@@ -131,7 +148,7 @@ bool SD_AUDIO_RECORDER::start_playing()
   m_play_back_file_size = m_play_back_audio_file.size();
   m_play_back_file_offset = 0;
   Serial.print("File open - file size: ");
-  Serial.print(m_play_back_file_size);
+  Serial.println(m_play_back_file_size);
 
   return true;
 }
