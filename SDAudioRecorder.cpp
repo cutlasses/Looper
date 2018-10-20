@@ -29,7 +29,6 @@ void SD_AUDIO_RECORDER::update()
         {
           m_jump_pending = false;
           m_play_back_file_offset = m_jump_position;
-          Serial.println("Jump");
         }
       }
       
@@ -37,7 +36,6 @@ void SD_AUDIO_RECORDER::update()
 
       if( m_looping && m_mode == MODE::STOP )
       {
-        Serial.println("LOOP");
         start_playing();
         m_mode = MODE::PLAY;
       }
