@@ -14,6 +14,10 @@ constexpr int SDCARD_SCK_PIN   = 13;  // not actually used
 
 constexpr int I2C_ADDRESS(0x01); 
 
+constexpr int MAX_SAMPLES(12);
+char* sample_files[MAX_SAMPLES];
+int num_samples_loaded        = 0;
+
 // wrap in a struct to ensure initialisation order
 struct IO
 {
@@ -67,6 +71,45 @@ void set_adc1_to_3v3()
   
 }
 
+// find all .raw files in dir and add to sample list
+void fill_sample_list( File dir )
+{
+  for( int i = 0; i < MAX_SAMPLES; ++i )
+  {
+    sample_files[i] = nullptr;  
+  }
+  
+  while(1)
+  {
+    File entry = dir.openNextFile();
+    if( !entry )
+    {
+      // done!
+      return;
+    }
+
+    if( !entry.isDirectory() )
+    {
+      const int entry_filename_length = strlen(entry.name());
+      constexpr const char* file_ext = ".RAW";
+      constexpr int file_ext_length = strlen( file_ext );
+      const char* entry_ext = entry.name() + entry_filename_length - file_ext_length;
+      
+      if( entry_filename_length > file_ext_length && strncmp( entry_ext, file_ext, file_ext_length ) == 0 )
+      { 
+        sample_files[num_samples_loaded] = new char[entry_filename_length+1];
+        strcpy( sample_files[num_samples_loaded], entry.name() );
+  
+        if( ++num_samples_loaded == MAX_SAMPLES )
+        {
+          // sample list full
+          return;
+        }
+      }
+    }
+  }
+}
+
 void setup()
 {
   Serial.begin(9600);
@@ -92,12 +135,21 @@ void setup()
     }
   }
 
+  File root = SD.open("/");
+  fill_sample_list( root );
+
+  Serial.println("Files:");
+  for( int i = 0; i < num_samples_loaded; ++i )
+  {
+    Serial.println( sample_files[i] );
+  }
+
   Wire.begin( I2C_ADDRESS );
 
   button_strip.set_step_length( 300 ); // remove once time extracted from sample
 
   Serial.print("Setup finished!\n");
-  delay(500);
+  delay(5000);
 }
 
 void loop()
