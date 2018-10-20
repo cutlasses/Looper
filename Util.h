@@ -52,9 +52,14 @@ T lerp( const T& v1, const T& v2, float t )
 
 /////////////////////////////////////////////////////
 
-constexpr int trunc_to_int( float v )
+inline constexpr int trunc_to_int( float v )
 {
   return static_cast<int>( trunc(v) );
+}
+
+inline constexpr int round_to_int( float v )
+{
+  return trunc_to_int( v + 0.5f );
 }
 
 /////////////////////////////////////////////////////

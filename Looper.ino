@@ -6,6 +6,7 @@
 #include <SerialFlash.h>
 
 #include "ButtonStrip.h"
+#include "LooperInterface.h"
 #include "SDAudioRecorder.h"
 
 constexpr int SDCARD_CS_PIN    = BUILTIN_SDCARD;
@@ -41,6 +42,8 @@ AudioConnection   patch_cord_1( io.audio_input, 0, audio_recorder, 0 );
 AudioConnection   patch_cord_2( audio_recorder, 0, io.audio_output, 0 );
 
 BUTTON_STRIP      button_strip( I2C_ADDRESS );
+
+LOOPER_INTERFACE  looper_interface;
 
 //////////////////////////////////////
 
@@ -144,6 +147,8 @@ void setup()
     Serial.println( sample_files[i] );
   }
 
+  looper_interface.setup( num_samples_loaded );
+
   Wire.begin( I2C_ADDRESS );
 
   button_strip.set_step_length( 300 ); // remove once time extracted from sample
@@ -155,13 +160,27 @@ void setup()
 void loop()
 {
   uint64_t time_ms = millis();
-  
+
+  /*
   static bool start = false;
   if( !start )
   {
     start = true;
 
     audio_recorder.play_file( "drumloop.raw", true );
+  }
+  */
+
+  looper_interface.update( io.adc, time_ms );
+
+  int sample_index( 0 );
+  if( looper_interface.sample_to_play( sample_index ) )
+  {
+    Serial.print("Playing:");
+    Serial.print(sample_index);
+    Serial.print(", ");
+    Serial.println( sample_files[sample_index] );
+    audio_recorder.play_file( sample_files[ sample_index ], true );
   }
 
   uint32_t segment;

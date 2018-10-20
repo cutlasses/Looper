@@ -5,6 +5,17 @@
 
 class LOOPER_INTERFACE
 {
+public:
+
+  enum class MODE
+  {
+    SD_PLAYBACK,
+    LOOPER,
+    NUM_MODES,
+  };
+
+private:
+  
     static constexpr int      MODE_BUTTON_PIN               = 2;
     static constexpr int      RECORD_BUTTON_PIN             = 1;
     static constexpr int      LED_1_PIN                     = 29;
@@ -21,10 +32,17 @@ class LOOPER_INTERFACE
 
     LED                       m_leds[NUM_LEDS];
 
+    int                       m_current_play_back_sample;
+    int                       m_num_samples;
+    MODE                      m_mode;
+
   public:
 
     LOOPER_INTERFACE();
-    void                      setup();
+    void                      setup( int num_samples );
 
     void                      update( ADC& adc, uint32_t time_in_ms );
+
+    MODE                      mode() const;
+    bool                      sample_to_play( int& sample_index );
 };
