@@ -117,7 +117,7 @@ void setup()
 {
   Serial.begin(9600);
 
-  constexpr int mem_size = 256 ;
+  constexpr int mem_size = 256;
   AudioMemory( mem_size );
 
   analogReference(INTERNAL);
