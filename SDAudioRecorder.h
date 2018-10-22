@@ -4,6 +4,9 @@
 
 class SD_AUDIO_RECORDER : public AudioStream
 {
+  
+public:
+
   enum class MODE
   {
     PLAY,
@@ -11,12 +14,12 @@ class SD_AUDIO_RECORDER : public AudioStream
     RECORD,
     OVERDUB,
   };
-  
-public:
 
   SD_AUDIO_RECORDER();
 
   virtual void      update() override;
+
+  MODE              mode() const;
   
   void              play();
   void              play_file( const char* filename, bool loop );

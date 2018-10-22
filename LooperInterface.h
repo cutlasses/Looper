@@ -41,8 +41,9 @@ private:
     LOOPER_INTERFACE();
     void                      setup( int num_samples );
 
-    void                      update( ADC& adc, uint32_t time_in_ms );
+    bool                      update( ADC& adc, uint32_t time_in_ms );
 
     MODE                      mode() const;
+    const BUTTON&             record_button();
     bool                      sample_to_play( int& sample_index );
 };

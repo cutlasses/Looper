@@ -161,22 +161,72 @@ void loop()
 {
   uint64_t time_ms = millis();
 
-  looper_interface.update( io.adc, time_ms );
-
-  int sample_index( 0 );
-  if( looper_interface.sample_to_play( sample_index ) )
+  if( looper_interface.update( io.adc, time_ms ) )
   {
-    Serial.print("Playing:");
-    Serial.print(sample_index);
-    Serial.print(", ");
-    Serial.println( sample_files[sample_index] );
-    audio_recorder.play_file( sample_files[ sample_index ], true );
+    // mode changed
+    audio_recorder.stop();
   }
 
+  switch( looper_interface.mode() )
+  {
+    case LOOPER_INTERFACE::MODE::SD_PLAYBACK:
+    {
+      int sample_index( 0 );
+      if( looper_interface.sample_to_play( sample_index ) )
+      {
+        Serial.print("Playing:");
+        Serial.print(sample_index);
+        Serial.print(", ");
+        Serial.println( sample_files[sample_index] );
+        audio_recorder.play_file( sample_files[ sample_index ], true );
+      }
+      break;
+    }
+    case LOOPER_INTERFACE::MODE::LOOPER:
+    {
+      if( looper_interface.record_button().single_click() )
+      {
+        switch( audio_recorder.mode() )
+        {
+          case SD_AUDIO_RECORDER::MODE::STOP:
+          case SD_AUDIO_RECORDER::MODE::PLAY:
+          {
+            // start recording over the top
+            audio_recorder.record();
+            Serial.println("RECORD");
+            break;
+          }
+          case SD_AUDIO_RECORDER::MODE::RECORD:
+          {
+            // stop recording and play loop
+            audio_recorder.play();
+            Serial.println("PLAY");
+            break;
+          }
+          default:
+          {
+            // further modes to come..
+            Serial.println("Unknown looper mode");
+            break;
+          }
+        }
+      }
+      break;
+    }
+    default:
+    {
+      Serial.println("Error:what mode is this");
+      break;
+    }
+  }
+  
   uint32_t segment;
   if( button_strip.update( time_ms, segment ) )
   {
-    const float t = segment / static_cast<float>(button_strip.num_segments());
-    audio_recorder.set_read_position( t );
+    if( audio_recorder.mode() == SD_AUDIO_RECORDER::MODE::PLAY )
+    {
+      const float t = segment / static_cast<float>(button_strip.num_segments());
+      audio_recorder.set_read_position( t );
+    }
   }
 }

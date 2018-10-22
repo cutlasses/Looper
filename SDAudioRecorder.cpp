@@ -52,6 +52,11 @@ void SD_AUDIO_RECORDER::update()
     }
   }
 }
+
+SD_AUDIO_RECORDER::MODE SD_AUDIO_RECORDER::mode() const
+{
+  return m_mode;
+}
   
 void SD_AUDIO_RECORDER::play()
 {
@@ -65,6 +70,11 @@ void SD_AUDIO_RECORDER::play_file( const char* filename, bool loop )
   // NOTE - should this be delaying call to start_playing() until update?
   m_play_back_file = filename;
   m_looping = loop;
+
+  if( m_mode != MODE::PLAY )
+  {
+    stop();
+  }
 
   if( start_playing() )
   {
@@ -101,6 +111,11 @@ void SD_AUDIO_RECORDER::stop()
 
 void SD_AUDIO_RECORDER::record()
 {
+  if( m_mode != MODE::RECORD )
+  {
+    stop();
+  }
+    
   start_recording();
   
   m_mode = MODE::RECORD;
@@ -217,6 +232,7 @@ void SD_AUDIO_RECORDER::stop_playing()
 
 void SD_AUDIO_RECORDER::start_recording()
 {
+  Serial.println("Start recording");
   if( SD.exists( RECORDING_FILENAME ) )
   {
     // delete previously existing file (SD library will append to the end)
@@ -244,11 +260,14 @@ void SD_AUDIO_RECORDER::update_recording()
     m_sd_record_queue.freeBuffer();
 
     m_recorded_audio_file.write( buffer, 512 );
+
+    Serial.println("Data written");
   }
 }
 
 void SD_AUDIO_RECORDER::stop_recording()
 {
+  Serial.println("Stop recording");
   m_sd_record_queue.end();
 
   if( m_mode == MODE::RECORD )
