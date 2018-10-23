@@ -245,7 +245,7 @@ void SD_AUDIO_RECORDER::start_recording()
 
   if( m_recorded_audio_file )
   {
-    m_sd_record_queue.begin();
+    m_sd_record_queue.start();
     Serial.println("Queue begin");
   }  
 }
@@ -257,10 +257,10 @@ void SD_AUDIO_RECORDER::update_recording()
     byte buffer[512]; // arduino library most efficient with full 512 sector size writes
 
     // write 2 x 256 byte blocks to buffer
-    memcpy( buffer, m_sd_record_queue.readBuffer(), 256);
-    m_sd_record_queue.freeBuffer();
-    memcpy( buffer + 256, m_sd_record_queue.readBuffer(), 256);
-    m_sd_record_queue.freeBuffer();
+    memcpy( buffer, m_sd_record_queue.read_buffer(), 256);
+    m_sd_record_queue.release_buffer();
+    memcpy( buffer + 256, m_sd_record_queue.read_buffer(), 256);
+    m_sd_record_queue.release_buffer();
 
     m_recorded_audio_file.write( buffer, 512 );
 
@@ -271,15 +271,15 @@ void SD_AUDIO_RECORDER::update_recording()
 void SD_AUDIO_RECORDER::stop_recording()
 {
   Serial.println("Stop recording");
-  m_sd_record_queue.end();
+  m_sd_record_queue.stop();
 
   if( m_mode == MODE::RECORD )
   {
     // empty the record queue
     while( m_sd_record_queue.available() > 0 )
     {
-      m_recorded_audio_file.write( reinterpret_cast<byte*>(m_sd_record_queue.readBuffer()), 256 );
-      m_sd_record_queue.freeBuffer();
+      m_recorded_audio_file.write( reinterpret_cast<byte*>(m_sd_record_queue.read_buffer()), 256 );
+      m_sd_record_queue.release_buffer();
     }
 
     m_recorded_audio_file.close();
