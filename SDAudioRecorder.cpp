@@ -12,7 +12,7 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   m_jump_position(0),
   m_jump_pending(false),
   m_looping(false),
-  m_sd_record_queue()
+  m_sd_record_queue(*this)
 {
 
 }
@@ -135,6 +135,16 @@ void SD_AUDIO_RECORDER::set_read_position( float t )
   m_jump_pending  = true;
   m_jump_position = file_pos + block_rem;
  }
+}
+
+audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
+{
+  return receiveReadOnly();
+}
+
+void SD_AUDIO_RECORDER::release_block_func(audio_block_t* block)
+{
+  release(block);
 }
 
 bool SD_AUDIO_RECORDER::start_playing()

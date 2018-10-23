@@ -29,6 +29,10 @@ public:
 
   void                set_read_position( float t );
 
+  //// For AUDIO_RECORD_QUEUE
+  audio_block_t*    aquire_block_func();
+  void              release_block_func(audio_block_t* block);
+
 private:
 
   audio_block_t*      m_input_queue_array[1];
@@ -46,8 +50,8 @@ private:
 
   bool                m_looping;
   
-
-  AUDIO_RECORD_QUEUE  m_sd_record_queue;
+  static constexpr const int QUEUE_SIZE = 53; // matches the teensy audio library
+  AUDIO_RECORD_QUEUE<QUEUE_SIZE, SD_AUDIO_RECORDER>  m_sd_record_queue;
 
   void                start_recording();
   void                update_recording();
