@@ -19,7 +19,7 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
 
 void SD_AUDIO_RECORDER::update()
 {
-  m_sd_record_queue.update(); // NOTE - thus is UNCONNECTED
+  m_sd_record_queue.update();
   
   switch( m_mode )
   {
