@@ -193,6 +193,7 @@ void loop()
           {
             // start recording over the top
             audio_recorder.record();
+            looper_interface.set_recording( true, time_ms );
             Serial.println("RECORD");
             break;
           }
@@ -200,6 +201,7 @@ void loop()
           {
             // stop recording and play loop
             audio_recorder.play();
+            looper_interface.set_recording( false, time_ms );
             Serial.println("PLAY");
             break;
           }

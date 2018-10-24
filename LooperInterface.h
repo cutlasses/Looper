@@ -42,8 +42,9 @@ private:
     void                      setup( int num_samples );
 
     bool                      update( ADC& adc, uint32_t time_in_ms );
+    void                      set_recording( bool recording, uint32_t time_in_ms );
 
     MODE                      mode() const;
-    const BUTTON&             record_button();
+    const BUTTON&             record_button() const;
     bool                      sample_to_play( int& sample_index );
 };
