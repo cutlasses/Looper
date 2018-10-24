@@ -273,8 +273,6 @@ void SD_AUDIO_RECORDER::update_recording()
     m_sd_record_queue.release_buffer();
 
     m_recorded_audio_file.write( buffer, 512 );
-
-    Serial.println("Data written");
   }
 }
 

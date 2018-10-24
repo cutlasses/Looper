@@ -8,7 +8,7 @@ LOOPER_INTERFACE::LOOPER_INTERFACE() :
   m_leds( { LED( LED_1_PIN, false ), LED( LED_2_PIN, false ), LED( LED_3_PIN, false ) } ),
   m_current_play_back_sample(-1),
   m_num_samples( 0 ),
-  m_mode( MODE::SD_PLAYBACK )
+  m_mode( MODE::LOOPER )
 {
 
 }
