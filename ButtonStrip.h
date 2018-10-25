@@ -7,7 +7,7 @@ class BUTTON_STRIP
 {
   static const constexpr int NUM_SEGMENTS   = 8;
   static const constexpr int32_t BUTTON_DEBOUNCE_MS = 5;
-  static const constexpr int64_t I2C_UPDATE_TIME_MS = 25;
+  static const constexpr int64_t LED_I2C_UPDATE_TIME_MS = 30;
   
   const int     m_i2c_address; 
   uint8_t       m_switch_values             = 0;
@@ -25,7 +25,7 @@ public:
   BUTTON_STRIP( int i2c_address );
   
   bool          update( uint32_t time_ms, uint32_t& activated_segment );
-  void          set_step_length( uint32_t step_length_ms );
+  void          set_sequence_length( uint32_t sequence_length_ms );
 
   int           num_segments() const;
 };

@@ -29,6 +29,8 @@ public:
 
   void                set_read_position( float t );
 
+  uint32_t            play_back_file_time_ms() const;
+
   //// For AUDIO_RECORD_QUEUE
   audio_block_t*    aquire_block_func();
   void              release_block_func(audio_block_t* block);
