@@ -51,10 +51,15 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
   m_switch_values = Wire.read();
 
   // write led values
-  const uint8_t led_values = (1 << m_step_num);
-  Wire.beginTransmission(m_i2c_address);
-  Wire.write(led_values);
-  Wire.endTransmission();
+  if( time_ms > m_next_i2c_time_stamp_ms )
+  {
+   m_next_i2c_time_stamp_ms = time_ms + I2C_UPDATE_TIME_MS;
+    
+    const uint8_t led_values = (1 << m_step_num);
+    Wire.beginTransmission(m_i2c_address);
+    Wire.write(led_values);
+    Wire.endTransmission();
+  }
 
   return step_triggered;
 }
