@@ -47,4 +47,5 @@ private:
     MODE                      mode() const;
     const BUTTON&             record_button() const;
     bool                      sample_to_play( int& sample_index );
+    float                     mix() const;
 };

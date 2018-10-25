@@ -38,8 +38,12 @@ IO io;
 
 SD_AUDIO_RECORDER audio_recorder;
 
+AudioMixer4       mixer;
+
 AudioConnection   patch_cord_1( io.audio_input, 0, audio_recorder, 0 );
-AudioConnection   patch_cord_2( audio_recorder, 0, io.audio_output, 0 );
+AudioConnection   patch_cord_2( io.audio_input, 0, mixer, 0 );
+AudioConnection   patch_cord_3( audio_recorder, 0, mixer, 1 );
+AudioConnection   patch_cord_4( mixer, 0, io.audio_output, 0 );
 
 BUTTON_STRIP      button_strip( I2C_ADDRESS );
 
@@ -221,6 +225,10 @@ void loop()
       break;
     }
   }
+
+  const float mix = looper_interface.mix();
+  mixer.gain( 0, 1.0f - mix );
+  mixer.gain( 1, mix );
   
   uint32_t segment;
   if( button_strip.update( time_ms, segment ) )
