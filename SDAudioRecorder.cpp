@@ -273,8 +273,6 @@ void SD_AUDIO_RECORDER::update_recording()
     m_sd_record_queue.release_buffer();
 
     m_recorded_audio_file.write( buffer, 512 );
-
-    Serial.println("Data written");
   }
 }
 
@@ -296,5 +294,16 @@ void SD_AUDIO_RECORDER::stop_recording()
   }
 
   m_mode = MODE::STOP;
+}
+
+uint32_t SD_AUDIO_RECORDER::play_back_file_time_ms() const
+{
+  const uint64_t num_samples = m_play_back_file_size / 2;
+  const uint64_t time_in_ms = ( num_samples * 1000 ) / AUDIO_SAMPLE_RATE;
+
+  Serial.print("Play back time in seconds:");
+  Serial.println(time_in_ms / 1000.0f);
+
+  return time_in_ms;
 }
 

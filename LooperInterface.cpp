@@ -8,7 +8,7 @@ LOOPER_INTERFACE::LOOPER_INTERFACE() :
   m_leds( { LED( LED_1_PIN, false ), LED( LED_2_PIN, false ), LED( LED_3_PIN, false ) } ),
   m_current_play_back_sample(-1),
   m_num_samples( 0 ),
-  m_mode( MODE::SD_PLAYBACK )
+  m_mode( MODE::LOOPER )
 {
 
 }
@@ -50,7 +50,10 @@ bool LOOPER_INTERFACE::update( ADC& adc, uint32_t time_in_ms )
   for( int l = 0; l < NUM_LEDS; ++l )
   {
     LED& led = m_leds[l];
-    led.set_active( l == static_cast<int>(m_mode) );
+    if( l < static_cast<int>(MODE::NUM_MODES) )
+    {
+      led.set_active( l == static_cast<int>(m_mode) );
+    }
     
     led.update( time_in_ms );
   }
@@ -58,12 +61,26 @@ bool LOOPER_INTERFACE::update( ADC& adc, uint32_t time_in_ms )
   return mode_changed;
 }
 
+void LOOPER_INTERFACE::set_recording( bool recording, uint32_t time_in_ms )
+{
+  LED& recording_led = m_leds[ NUM_LEDS - 1 ];
+  if( recording )
+  {
+    constexpr const int RECORD_FLASH_TIME(500);
+    recording_led.flash_on( time_in_ms, RECORD_FLASH_TIME );
+  }
+  else
+  {
+    recording_led.flash_off();
+  }
+}
+
 LOOPER_INTERFACE::MODE LOOPER_INTERFACE::mode() const
 {
   return m_mode;
 }
 
-const BUTTON& LOOPER_INTERFACE::record_button()
+const BUTTON& LOOPER_INTERFACE::record_button() const
 {
   return m_record_button;
 }
@@ -82,5 +99,11 @@ bool LOOPER_INTERFACE::sample_to_play( int& sample_index )
   
   return false;
 }
+
+ float LOOPER_INTERFACE::mix() const
+ {
+  // bottom dial is mix, for consistency with my other modules
+  return m_dials[NUM_DIALS-1].value();
+ }
 
 

@@ -46,22 +46,28 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
     }
   }
 
+  
   // read switch values
   Wire.requestFrom( m_i2c_address, 1);
   m_switch_values = Wire.read();
 
   // write led values
-  const uint8_t led_values = (1 << m_step_num);
-  Wire.beginTransmission(m_i2c_address);
-  Wire.write(led_values);
-  Wire.endTransmission();
+  if( time_ms > m_next_i2c_time_stamp_ms )
+  {
+    m_next_i2c_time_stamp_ms = time_ms + LED_I2C_UPDATE_TIME_MS;
+    
+    const uint8_t led_values = (1 << m_step_num);
+    Wire.beginTransmission(m_i2c_address);
+    Wire.write(led_values);
+    Wire.endTransmission();
+  }
 
   return step_triggered;
 }
 
-void BUTTON_STRIP::set_step_length( uint32_t step_length_ms )
+void BUTTON_STRIP::set_sequence_length( uint32_t sequence_length_ms )
 {
-  m_step_length_ms = step_length_ms;
+  m_step_length_ms = sequence_length_ms / NUM_SEGMENTS;
 }
 
  int BUTTON_STRIP::num_segments() const

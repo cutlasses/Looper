@@ -38,8 +38,12 @@ IO io;
 
 SD_AUDIO_RECORDER audio_recorder;
 
+AudioMixer4       mixer;
+
 AudioConnection   patch_cord_1( io.audio_input, 0, audio_recorder, 0 );
-AudioConnection   patch_cord_2( audio_recorder, 0, io.audio_output, 0 );
+AudioConnection   patch_cord_2( io.audio_input, 0, mixer, 0 );
+AudioConnection   patch_cord_3( audio_recorder, 0, mixer, 1 );
+AudioConnection   patch_cord_4( mixer, 0, io.audio_output, 0 );
 
 BUTTON_STRIP      button_strip( I2C_ADDRESS );
 
@@ -151,7 +155,7 @@ void setup()
 
   Wire.begin( I2C_ADDRESS );
 
-  button_strip.set_step_length( 300 ); // remove once time extracted from sample
+  button_strip.set_sequence_length( 3000 ); // remove once time extracted from sample
 
   Serial.print("Setup finished!\n");
   delay(500);
@@ -178,7 +182,9 @@ void loop()
         Serial.print(sample_index);
         Serial.print(", ");
         Serial.println( sample_files[sample_index] );
+        
         audio_recorder.play_file( sample_files[ sample_index ], true );
+        button_strip.set_sequence_length( audio_recorder.play_back_file_time_ms() );
       }
       break;
     }
@@ -193,6 +199,8 @@ void loop()
           {
             // start recording over the top
             audio_recorder.record();
+            looper_interface.set_recording( true, time_ms );
+            
             Serial.println("RECORD");
             break;
           }
@@ -200,6 +208,9 @@ void loop()
           {
             // stop recording and play loop
             audio_recorder.play();
+            looper_interface.set_recording( false, time_ms );
+            button_strip.set_sequence_length( audio_recorder.play_back_file_time_ms() );
+            
             Serial.println("PLAY");
             break;
           }
@@ -219,6 +230,10 @@ void loop()
       break;
     }
   }
+
+  const float mix = looper_interface.mix();
+  mixer.gain( 0, 1.0f - mix );
+  mixer.gain( 1, mix );
   
   uint32_t segment;
   if( button_strip.update( time_ms, segment ) )
