@@ -1,9 +1,13 @@
+#include <limits>
+
+#include "Util.h"
 #include "SDAudioRecorder.h"
 
 constexpr const char* RECORDING_FILENAME = "RECORD.RAW";
 
 SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   AudioStream( 1, m_input_queue_array ),
+  m_overdub_block( nullptr ),
   m_mode( MODE::STOP ),
   m_recorded_audio_file(),
   m_play_back_audio_file(),
@@ -18,9 +22,7 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
 }
 
 void SD_AUDIO_RECORDER::update()
-{
-  m_sd_record_queue.update();
-  
+{  
   switch( m_mode )
   {
     case MODE::PLAY:
@@ -48,11 +50,18 @@ void SD_AUDIO_RECORDER::update()
       update_recording();
       break;
     }
+    case MODE::OVERDUB:
+    {
+      update_playing();
+      update_recording();
+    }
     default:
     {
       break;
     }
   }
+
+  m_sd_record_queue.update();
 }
 
 SD_AUDIO_RECORDER::MODE SD_AUDIO_RECORDER::mode() const
@@ -123,6 +132,19 @@ void SD_AUDIO_RECORDER::record()
   m_mode = MODE::RECORD;
 }
 
+void SD_AUDIO_RECORDER::overdub()
+{
+  ASSERT_MSG( m_mode == MODE::PLAY, "Can only overdub when playing" );
+
+  if( m_mode == MODE::PLAY )
+  {
+    // TODO swap the internal playback and record files
+    // update recording
+
+     m_mode = MODE::OVERDUB;
+  }
+}
+
 void SD_AUDIO_RECORDER::set_read_position( float t )
 {
  if( m_mode == MODE::PLAY )
@@ -139,7 +161,31 @@ void SD_AUDIO_RECORDER::set_read_position( float t )
 
 audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
 {
-  return receiveReadOnly();
+  if( m_mode == MODE::OVERDUB )
+  {
+    ASSERT_MSG( m_overdub_block != nullptr, "Cannot overdub, no block" );
+    audio_block_t* in_block = receiveWritable();
+
+    // mix incoming audio with recorded audio ( from update_playing() ) then release
+    if( in_block != nullptr && m_overdub_block != nullptr )
+    {
+      for( int i = 0; i < AUDIO_BLOCK_SAMPLES; ++i )
+      {
+        // TODO apply soft clipping?
+        in_block->data[i] += m_overdub_block->data[i];
+        ASSERT_MSG( in_block->data[i] < std::numeric_limits<int16_t>::max() && in_block->data[i] > std::numeric_limits<int16_t>::min(), "CLIPPING" );
+      }
+
+      release( m_overdub_block );
+      m_overdub_block = nullptr;
+    }
+
+    return in_block;
+  }
+  else
+  {
+    return receiveReadOnly();
+  }
 }
 
 void SD_AUDIO_RECORDER::release_block_func(audio_block_t* block)
@@ -215,8 +261,16 @@ void SD_AUDIO_RECORDER::update_playing()
 #endif
     m_mode = MODE::STOP;
   }
-  
-  release(block);
+
+  if( m_mode == MODE::OVERDUB )
+  {
+    ASSERT_MSG( m_overdub_block == nullptr, "Leaking overdub block" );
+    m_overdub_block = block;
+  }
+  else
+  {
+    release(block);
+  }
 }
 
 void SD_AUDIO_RECORDER::stop_playing()

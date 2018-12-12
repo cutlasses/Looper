@@ -121,6 +121,8 @@ void setup()
 {
   Serial.begin(9600);
 
+  serial_port_initialised = true;
+
   constexpr int mem_size = 256;
   AudioMemory( mem_size );
 

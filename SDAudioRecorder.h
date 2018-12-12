@@ -26,6 +26,7 @@ public:
   void                play_file( const char* filename, bool loop );
   void                stop();
   void                record();
+  void                overdub();
 
   void                set_read_position( float t );
 
@@ -38,6 +39,7 @@ public:
 private:
 
   audio_block_t*      m_input_queue_array[1];
+  audio_block_t*      m_overdub_block;
 
   MODE                m_mode;
   const char*         m_play_back_file;

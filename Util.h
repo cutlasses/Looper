@@ -1,5 +1,32 @@
 #pragma once
 
+#include <Arduino.h>
+#include "CompileSwitches.h"
+
+#ifdef DEBUG_OUTPUT
+
+extern bool serial_port_initialised;
+
+inline bool _assert_fail( const char* assert, const char* msg )
+{
+  if( serial_port_initialised )
+  {
+    Serial.print(assert);
+    Serial.print(" ");
+    Serial.print(msg);
+    Serial.print("\n");
+  }
+  
+  return true;
+}
+
+#define ASSERT_MSG(x, msg) ((void)((x) || (_assert_fail(#x,msg))))
+#define DEBUG_TEXT(x) if(serial_port_initialised) Serial.print(x);
+#else
+#define ASSERT_MSG(x, msg)
+#define DEBUG_TEXT(x)
+#endif
+
 /////////////////////////////////////////////////////
 
 template <typename T>
@@ -54,7 +81,7 @@ T lerp( const T& v1, const T& v2, float t )
 
 inline constexpr int trunc_to_int( float v )
 {
-  return static_cast<int>( trunc(v) );
+  return static_cast<int>( v );
 }
 
 inline constexpr int round_to_int( float v )
