@@ -64,5 +64,8 @@ private:
   bool                start_playing();
   void                update_playing();
   void                stop_playing();
+
+  void                start_overdub();
+  void                stop_overdub();
 };
 

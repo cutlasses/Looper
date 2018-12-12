@@ -111,6 +111,11 @@ void SD_AUDIO_RECORDER::stop()
       stop_recording();
       break;
     }
+    case MODE::OVERDUB:
+    {
+      stop_overdub();
+      break;
+    }
     default:
     {
       break;
@@ -138,8 +143,7 @@ void SD_AUDIO_RECORDER::overdub()
 
   if( m_mode == MODE::PLAY )
   {
-    // TODO swap the internal playback and record files
-    // update recording
+    start_overdub();
 
      m_mode = MODE::OVERDUB;
   }
@@ -163,7 +167,7 @@ audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
 {
   if( m_mode == MODE::OVERDUB )
   {
-    ASSERT_MSG( m_overdub_block != nullptr, "Cannot overdub, no block" );
+    ASSERT_MSG( m_overdub_block != nullptr, "Cannot overdub, no block" ); // can it be null if overdub exceeds original play file?
     audio_block_t* in_block = receiveWritable();
 
     // mix incoming audio with recorded audio ( from update_playing() ) then release
@@ -348,6 +352,22 @@ void SD_AUDIO_RECORDER::stop_recording()
   }
 
   m_mode = MODE::STOP;
+}
+
+void SD_AUDIO_RECORDER::start_overdub()
+{
+    // continue playinng file
+    // start recording NEW file
+}
+
+void SD_AUDIO_RECORDER::stop_overdub()
+{
+  // stop playing
+  // stop recording
+  
+  // toggle record/play filenames
+
+  // start playing
 }
 
 uint32_t SD_AUDIO_RECORDER::play_back_file_time_ms() const
