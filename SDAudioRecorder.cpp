@@ -3,7 +3,8 @@
 #include "Util.h"
 #include "SDAudioRecorder.h"
 
-constexpr const char* RECORDING_FILENAME = "RECORD.RAW";
+constexpr const char* RECORDING_FILENAME1 = "RECORD1.RAW";
+constexpr const char* RECORDING_FILENAME2 = "RECORD2.RAW";
 
 SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   AudioStream( 1, m_input_queue_array ),
@@ -61,6 +62,7 @@ void SD_AUDIO_RECORDER::update()
     }
   }
 
+  // update after updating play to capture buffer for overdub
   m_sd_record_queue.update();
 }
 
@@ -71,15 +73,15 @@ SD_AUDIO_RECORDER::MODE SD_AUDIO_RECORDER::mode() const
   
 void SD_AUDIO_RECORDER::play()
 {
-  m_play_back_file = RECORDING_FILENAME;
+  m_play_back_filename = RECORDING_FILENAME1;
 
-  play_file( RECORDING_FILENAME, true );
+  play_file( m_play_back_filename, true );
 }
 
 void SD_AUDIO_RECORDER::play_file( const char* filename, bool loop )
 {
   // NOTE - should this be delaying call to start_playing() until update?
-  m_play_back_file = filename;
+  m_play_back_filename = filename;
   m_looping = loop;
 
   if( m_mode != MODE::PLAY )
@@ -131,6 +133,9 @@ void SD_AUDIO_RECORDER::record()
   {
     stop();
   }
+
+  // set the initial record filename
+  m_record_filename = RECORDING_FILENAME1;
     
   start_recording();
   
@@ -145,7 +150,7 @@ void SD_AUDIO_RECORDER::overdub()
   {
     start_overdub();
 
-     m_mode = MODE::OVERDUB;
+    m_mode = MODE::OVERDUB;
   }
 }
 
@@ -207,7 +212,7 @@ bool SD_AUDIO_RECORDER::start_playing()
   AudioStartUsingSPI();
 #endif
   __disable_irq();
-  m_play_back_audio_file = SD.open( m_play_back_file );
+  m_play_back_audio_file = SD.open( m_play_back_filename );
   __enable_irq();
   
   if( !m_play_back_audio_file )
@@ -223,7 +228,7 @@ bool SD_AUDIO_RECORDER::start_playing()
   }
 
   Serial.print("File loaded ");
-  Serial.println(m_play_back_file);
+  Serial.println(m_play_back_filename);
   m_play_back_file_size = m_play_back_audio_file.size();
   m_play_back_file_offset = 0;
   Serial.print("File open - file size: ");
@@ -301,15 +306,15 @@ void SD_AUDIO_RECORDER::stop_playing()
 }
 
 void SD_AUDIO_RECORDER::start_recording()
-{
+{  
   Serial.println("Start recording");
-  if( SD.exists( RECORDING_FILENAME ) )
+  if( SD.exists( m_record_filename ) )
   {
     // delete previously existing file (SD library will append to the end)
-    SD.remove( RECORDING_FILENAME ); 
+    SD.remove( m_record_filename ); 
   } 
   
-  m_recorded_audio_file = SD.open( RECORDING_FILENAME, FILE_WRITE );
+  m_recorded_audio_file = SD.open( m_record_filename, FILE_WRITE );
 
   if( m_recorded_audio_file )
   {
@@ -331,6 +336,15 @@ void SD_AUDIO_RECORDER::update_recording()
     m_sd_record_queue.release_buffer();
 
     m_recorded_audio_file.write( buffer, 512 );
+
+    // stop overdubbing when we've recorded the same length as the original
+    if( m_mode == MODE::OVERDUB )
+    {
+      if( m_recorded_audio_file.size() == m_play_back_file_size )
+      {
+        stop_overdub();
+      }
+    }
   }
 }
 
@@ -356,18 +370,21 @@ void SD_AUDIO_RECORDER::stop_recording()
 
 void SD_AUDIO_RECORDER::start_overdub()
 {
-    // continue playinng file
-    // start recording NEW file
+  start_playing();
+  start_recording();
 }
 
 void SD_AUDIO_RECORDER::stop_overdub()
 {
-  // stop playing
-  // stop recording
+  stop_playing();
+  stop_recording();
   
   // toggle record/play filenames
+  swap( m_play_back_filename, m_record_filename );
 
-  // start playing
+  m_mode = MODE::PLAY;
+
+  start_playing();
 }
 
 uint32_t SD_AUDIO_RECORDER::play_back_file_time_ms() const

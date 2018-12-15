@@ -14,6 +14,7 @@ constexpr int SDCARD_MOSI_PIN  = 11;  // not actually used CAN I DELETE?
 constexpr int SDCARD_SCK_PIN   = 13;  // not actually used
 
 constexpr int I2C_ADDRESS(0x01); 
+constexpr int STOP_LOOP_BUTTON_DOWN_TIME_MS(2000);
 
 constexpr int MAX_SAMPLES(12);
 char* sample_files[MAX_SAMPLES];
@@ -197,7 +198,6 @@ void loop()
         switch( audio_recorder.mode() )
         {
           case SD_AUDIO_RECORDER::MODE::STOP:
-          case SD_AUDIO_RECORDER::MODE::PLAY:
           {
             // start recording over the top
             audio_recorder.record();
@@ -216,6 +216,16 @@ void loop()
             Serial.println("PLAY");
             break;
           }
+          case SD_AUDIO_RECORDER::MODE::PLAY:
+          {
+             // start overdubbing
+            audio_recorder.overdub();
+            looper_interface.set_recording( true, time_ms );
+            button_strip.set_sequence_length( audio_recorder.play_back_file_time_ms() );
+            
+            Serial.println("PLAY");
+            break;           
+          }
           default:
           {
             // further modes to come..
@@ -223,6 +233,10 @@ void loop()
             break;
           }
         }
+      }
+      else if( looper_interface.record_button().down_time_ms() > STOP_LOOP_BUTTON_DOWN_TIME_MS )
+      {
+        audio_recorder.stop();
       }
       break;
     }

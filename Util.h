@@ -69,6 +69,14 @@ T min_val( const T& v1, const T& v2 )
   }
 }
 
+template <typename T>
+void swap( T& v1, T& v2 )
+{
+  T temp = v1;
+  v1 = v2;
+  v2 = temp;
+}
+
 /////////////////////////////////////////////////////
 
 template <typename T>

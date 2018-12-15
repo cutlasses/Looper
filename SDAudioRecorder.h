@@ -42,7 +42,8 @@ private:
   audio_block_t*      m_overdub_block;
 
   MODE                m_mode;
-  const char*         m_play_back_file;
+  const char*         m_play_back_filename;
+  const char*         m_record_filename;
 
   File                m_recorded_audio_file;
   File                m_play_back_audio_file;
