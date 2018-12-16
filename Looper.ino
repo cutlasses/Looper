@@ -194,7 +194,7 @@ void loop()
     case LOOPER_INTERFACE::MODE::LOOPER:
     {
       if( looper_interface.record_button().single_click() )
-      {
+      {        
         switch( audio_recorder.mode() )
         {
           case SD_AUDIO_RECORDER::MODE::STOP:
@@ -206,6 +206,7 @@ void loop()
             Serial.println("RECORD");
             break;
           }
+          case SD_AUDIO_RECORDER::MODE::OVERDUB:
           case SD_AUDIO_RECORDER::MODE::RECORD:
           {
             // stop recording and play loop
@@ -223,7 +224,7 @@ void loop()
             looper_interface.set_recording( true, time_ms );
             button_strip.set_sequence_length( audio_recorder.play_back_file_time_ms() );
             
-            Serial.println("PLAY");
+            Serial.println("OVERDUB");
             break;           
           }
           default:
