@@ -215,7 +215,8 @@ audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
       release( m_overdub_block );
       m_overdub_block = nullptr;
     }
-    
+
+    ASSERT_MSG( in_block != nullptr, "No overdub in block" );
     return in_block;
   }
   else
@@ -330,7 +331,8 @@ void SD_AUDIO_RECORDER::stop_playing()
 
 void SD_AUDIO_RECORDER::start_recording()
 {  
-  Serial.println("SD_AUDIO_RECORDER::start_recording");
+  Serial.print("SD_AUDIO_RECORDER::start_recording ");
+  Serial.println(m_record_filename);
   if( SD.exists( m_record_filename ) )
   {
     // delete previously existing file (SD library will append to the end)
