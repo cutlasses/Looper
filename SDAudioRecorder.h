@@ -29,12 +29,14 @@ public:
   void                overdub();
 
   void                set_read_position( float t );
-
+  
   uint32_t            play_back_file_time_ms() const;
 
+  static const char*  mode_to_string( MODE mode );
+
   //// For AUDIO_RECORD_QUEUE
-  audio_block_t*    aquire_block_func();
-  void              release_block_func(audio_block_t* block);
+  audio_block_t*      aquire_block_func();
+  void                release_block_func(audio_block_t* block);
 
 private:
 
@@ -68,5 +70,7 @@ private:
 
   void                start_overdub();
   void                stop_overdub();
+
+  void                stop_current_mode( bool reset_play_file );
 };
 

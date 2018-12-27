@@ -171,6 +171,7 @@ void loop()
   if( looper_interface.update( io.adc, time_ms ) )
   {
     // mode changed
+    Serial.println("Stop() Mode Change" );
     audio_recorder.stop();
   }
 
@@ -194,7 +195,10 @@ void loop()
     case LOOPER_INTERFACE::MODE::LOOPER:
     {
       if( looper_interface.record_button().single_click() )
-      {        
+      {
+        Serial.print("CLICK ");
+        Serial.println( SD_AUDIO_RECORDER::mode_to_string( audio_recorder.mode() ) );
+                
         switch( audio_recorder.mode() )
         {
           case SD_AUDIO_RECORDER::MODE::STOP:
@@ -237,6 +241,7 @@ void loop()
       }
       else if( looper_interface.record_button().down_time_ms() > STOP_LOOP_BUTTON_DOWN_TIME_MS )
       {
+        Serial.println("Hold Stop");
         audio_recorder.stop();
       }
       break;
