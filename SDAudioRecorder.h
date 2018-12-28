@@ -55,7 +55,7 @@ private:
   uint32_t            m_jump_position;
   bool                m_jump_pending;
 
-  bool                m_switch_buffers_pending;
+  bool                m_overdub_end_pending;
 
   bool                m_looping;
   
