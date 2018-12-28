@@ -55,6 +55,8 @@ private:
   uint32_t            m_jump_position;
   bool                m_jump_pending;
 
+  bool                m_switch_buffers_pending;
+
   bool                m_looping;
   
   static constexpr const int QUEUE_SIZE = 53; // matches the teensy audio library
@@ -72,5 +74,25 @@ private:
   void                stop_overdub();
 
   void                stop_current_mode( bool reset_play_file );
+
+  void                switch_play_record_buffers();
+
+  inline void         enable_SPI_audio()
+  {
+#if defined(HAS_KINETIS_SDHC)
+  if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStartUsingSPI();
+#else
+  AudioStartUsingSPI();
+#endif    
+  }
+  
+  inline void         disable_SPI_audio()
+  {
+#if defined(HAS_KINETIS_SDHC)
+      if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStopUsingSPI();
+#else
+      AudioStopUsingSPI();
+#endif    
+  }
 };
 

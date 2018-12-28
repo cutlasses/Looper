@@ -124,7 +124,7 @@ void setup()
 
   serial_port_initialised = true;
 
-  constexpr int mem_size = 256;
+  constexpr int mem_size = 512;
   AudioMemory( mem_size );
 
   analogReference(INTERNAL);

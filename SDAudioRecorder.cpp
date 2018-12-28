@@ -18,6 +18,7 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   m_play_back_file_offset(0),
   m_jump_position(0),
   m_jump_pending(false),
+  m_switch_buffers_pending(false),
   m_looping(false),
   m_sd_record_queue(*this)
 {
@@ -26,6 +27,9 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
 
 void SD_AUDIO_RECORDER::update()
 {  
+  //Serial.print( "MODE:" );
+  //Serial.println( mode_to_string( m_mode ) );
+  
   switch( m_mode )
   {
     case MODE::PLAY:
@@ -44,8 +48,17 @@ void SD_AUDIO_RECORDER::update()
       if( m_looping && m_mode == MODE::STOP )
       {
         __disable_irq();
+
+        Serial.println("Play - loop");
+
+        if( m_switch_buffers_pending )
+        {
+          switch_play_record_buffers();
+        }
+
         start_playing();
         m_mode = MODE::PLAY;
+        
         __enable_irq();
       }
       break; 
@@ -57,8 +70,22 @@ void SD_AUDIO_RECORDER::update()
     }
     case MODE::OVERDUB:
     {
+      Serial.println("Overdub update");
+      
       update_playing();
       update_recording();
+
+      if( m_looping && m_mode == MODE::STOP )
+      {
+        __disable_irq();
+
+        switch_play_record_buffers();
+        
+        start_overdub();
+        m_mode = MODE::OVERDUB;
+
+        __enable_irq();
+      }
     }
     default:
     {
@@ -77,12 +104,20 @@ SD_AUDIO_RECORDER::MODE SD_AUDIO_RECORDER::mode() const
   
 void SD_AUDIO_RECORDER::play()
 {
+  Serial.println("SD_AUDIO_RECORDER::play()");
+
+  AudioNoInterrupts();
+  
   if( m_mode == MODE::OVERDUB )
   {
     stop_overdub();
+    Serial.println("Overdub leave");
+    Serial.println( mode_to_string( m_mode ) );
   }
 
   play_file( m_play_back_filename, true );
+
+  AudioInterrupts();
 }
 
 void SD_AUDIO_RECORDER::play_file( const char* filename, bool loop )
@@ -113,16 +148,22 @@ void SD_AUDIO_RECORDER::play_file( const char* filename, bool loop )
 
 void SD_AUDIO_RECORDER::stop()
 {
+  AudioNoInterrupts();
+  
   Serial.print("SD_AUDIO_RECORDER::stop() ");
   Serial.println( mode_to_string(m_mode) );
   
   stop_current_mode( true );
 
   m_mode = MODE::STOP;
+
+  AudioInterrupts();
 }
 
 void SD_AUDIO_RECORDER::record()
 {
+  AudioNoInterrupts();
+  
   if( m_mode != MODE::RECORD )
   {
     Serial.println("Stop Record");
@@ -134,24 +175,26 @@ void SD_AUDIO_RECORDER::record()
   __enable_irq();
   
   m_mode = MODE::RECORD;
+
+  AudioInterrupts();
 }
 
 void SD_AUDIO_RECORDER::overdub()
 {
+  AudioNoInterrupts();
+  
   ASSERT_MSG( m_mode == MODE::PLAY, "Can only overdub when playing" );
 
   if( m_mode == MODE::PLAY )
   {
     Serial.println("Start overdub");
-
-    __disable_irq();
     
     start_overdub();
 
     m_mode = MODE::OVERDUB;
-
-    __enable_irq();
   }
+
+  AudioInterrupts();
 }
 
 void SD_AUDIO_RECORDER::set_read_position( float t )
@@ -174,6 +217,7 @@ audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
   {
     ASSERT_MSG( m_overdub_block != nullptr, "Cannot overdub, no block" ); // can it be null if overdub exceeds original play file?
     audio_block_t* in_block = receiveWritable();
+    //ASSERT_MSG( in_block != nullptr, "Overdub - unable to receive block" );
 
     // mix incoming audio with recorded audio ( from update_playing() ) then release
     if( in_block != nullptr && m_overdub_block != nullptr )
@@ -192,12 +236,13 @@ audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
       m_overdub_block = nullptr;
     }
 
-    ASSERT_MSG( in_block != nullptr, "No overdub in block" );
     return in_block;
   }
   else
   {
-    return receiveReadOnly();
+    audio_block_t* in_block = receiveReadOnly();
+    //ASSERT_MSG( in_block != nullptr, "Play - unable to receive block" );
+    return in_block;
   }
 }
 
@@ -212,11 +257,8 @@ bool SD_AUDIO_RECORDER::start_playing()
   
   // copied from https://github.com/PaulStoffregen/Audio/blob/master/play_sd_raw.cpp
   stop_playing();
-#if defined(HAS_KINETIS_SDHC)
-  if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStartUsingSPI();
-#else
-  AudioStartUsingSPI();
-#endif
+
+  enable_SPI_audio();
 
   m_play_back_audio_file = SD.open( m_play_back_filename );
   
@@ -251,6 +293,7 @@ void SD_AUDIO_RECORDER::update_playing()
   block = allocate();
   if( block == nullptr )
   {
+    Serial.println( "Failed to allocate" );
     return;
   }
 
@@ -267,13 +310,11 @@ void SD_AUDIO_RECORDER::update_playing()
   }
   else
   {
+    Serial.println("File End");
     m_play_back_audio_file.close();
     
-#if defined(HAS_KINETIS_SDHC)
-      if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStopUsingSPI();
-#else
-      AudioStopUsingSPI();
-#endif
+    disable_SPI_audio();
+    
     m_mode = MODE::STOP;
   }
 
@@ -298,11 +339,7 @@ void SD_AUDIO_RECORDER::stop_playing()
     
     m_play_back_audio_file.close();
     
-#if defined(HAS_KINETIS_SDHC)
-      if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStopUsingSPI();
-#else
-      AudioStopUsingSPI();
-#endif
+    disable_SPI_audio();
   }
 }
 
@@ -344,26 +381,6 @@ void SD_AUDIO_RECORDER::update_recording()
     m_sd_record_queue.release_buffer();
 
     m_recorded_audio_file.write( buffer, 512 );
-
-
-    /*
-    if( m_mode == MODE::OVERDUB )
-    {
-      Serial.print("Overdub written to: ");
-      Serial.println( m_recorded_audio_file.name() );
-    }
-
-    // stop overdubbing when we've recorded the same length as the original
-    if( m_mode == MODE::OVERDUB )
-    {
-      if( m_recorded_audio_file.size() == m_play_back_file_size )
-      {
-        __disable_irq();
-        stop_overdub();
-        __enable_irq();
-      }
-    }
-    */
   }
 }
 
@@ -383,9 +400,13 @@ void SD_AUDIO_RECORDER::stop_recording()
 
     if( m_mode == MODE::OVERDUB )
     {
-      Serial.println("Overdub close file start");
+      Serial.print("Overdub close file start ");
+      Serial.println( m_recorded_audio_file.name() );
     }
+
+    disable_SPI_audio();
     m_recorded_audio_file.close();
+    enable_SPI_audio();
 
     if( m_mode == MODE::OVERDUB )
     {
@@ -398,6 +419,11 @@ void SD_AUDIO_RECORDER::stop_recording()
 
 void SD_AUDIO_RECORDER::start_overdub()
 {
+  if( m_mode == MODE::OVERDUB )
+  {
+    stop_overdub();
+  }
+  
   if( m_play_back_filename == RECORDING_FILENAME1 )
   {
     m_play_back_filename  = RECORDING_FILENAME1;
@@ -417,21 +443,14 @@ void SD_AUDIO_RECORDER::stop_overdub()
 {
   Serial.println("stop_overdub()");
   
-  stop_playing();
-
-  m_mode = MODE::OVERDUB; // stop_playing() will have changed mode to stop
-  
   stop_recording();
   
-  // toggle record/play filenames
-  swap( m_play_back_filename, m_record_filename );
-  Serial.print( m_play_back_filename );
-  Serial.print(" " );
-  Serial.println( m_record_filename );
-
   m_mode = MODE::PLAY;
 
-  start_playing();
+  m_switch_buffers_pending = true;
+
+  Serial.println("LEAVING stop_overdub()");
+  Serial.println( mode_to_string( m_mode ) );
 }
 
 void SD_AUDIO_RECORDER::stop_current_mode( bool reset_play_file )
@@ -467,6 +486,19 @@ void SD_AUDIO_RECORDER::stop_current_mode( bool reset_play_file )
   }
 
   __enable_irq();
+}
+
+void SD_AUDIO_RECORDER::switch_play_record_buffers()
+{
+  // toggle record/play filenames
+  swap( m_play_back_filename, m_record_filename );
+
+  Serial.print( "switch_play_record_buffers() Play: ");
+  Serial.print( m_play_back_filename );
+  Serial.print(" Record: " );
+  Serial.println( m_record_filename );
+
+  m_switch_buffers_pending = false;
 }
 
 const char* SD_AUDIO_RECORDER::mode_to_string( MODE mode )
