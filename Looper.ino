@@ -10,8 +10,8 @@
 #include "SDAudioRecorder.h"
 
 constexpr int SDCARD_CS_PIN    = BUILTIN_SDCARD;
-constexpr int SDCARD_MOSI_PIN  = 11;  // not actually used CAN I DELETE?
-constexpr int SDCARD_SCK_PIN   = 13;  // not actually used
+constexpr int SDCARD_MOSI_PIN  = 11;
+constexpr int SDCARD_SCK_PIN   = 13;
 
 constexpr int I2C_ADDRESS(0x01); 
 constexpr int STOP_LOOP_BUTTON_DOWN_TIME_MS(2000);
