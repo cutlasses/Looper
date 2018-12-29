@@ -45,6 +45,8 @@ void SD_AUDIO_RECORDER::update()
       
       update_playing();
 
+      m_sd_record_queue.update();
+
       if( m_looping && m_mode == MODE::STOP )
       {
         __disable_irq();
@@ -60,12 +62,18 @@ void SD_AUDIO_RECORDER::update()
     }
     case MODE::RECORD:
     {
+      m_sd_record_queue.update();
+      
       update_recording();
       break;
     }
     case MODE::OVERDUB:
     {      
       update_playing();
+
+      // update after updating play to capture buffer for overdub
+      m_sd_record_queue.update();
+        
       update_recording();
 
       if( m_looping && m_mode == MODE::STOP )
@@ -96,9 +104,6 @@ void SD_AUDIO_RECORDER::update()
       break;
     }
   }
-
-  // update after updating play to capture buffer for overdub
-  m_sd_record_queue.update();
 }
 
 SD_AUDIO_RECORDER::MODE SD_AUDIO_RECORDER::mode() const
@@ -217,8 +222,12 @@ void SD_AUDIO_RECORDER::set_read_position( float t )
 
 audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
 {
-  if( m_mode == MODE::OVERDUB )
+  if( m_mode == MODE::OVERDUB || m_overdub_block != nullptr ) // when loop has finished, mode will be STOP, so check overdub block
   {
+    if( m_mode != MODE::OVERDUB )
+    {
+      Serial.println("Writing final block");
+    }
     ASSERT_MSG( m_overdub_block != nullptr, "Cannot overdub, no block" ); // can it be null if overdub exceeds original play file?
     audio_block_t* in_block = receiveWritable();
     //ASSERT_MSG( in_block != nullptr, "Overdub - unable to receive block" );
@@ -291,10 +300,10 @@ bool SD_AUDIO_RECORDER::start_playing()
 
 void SD_AUDIO_RECORDER::update_playing()
 {
-  audio_block_t *block;
+  const bool is_overdubbing = m_mode == MODE::OVERDUB;
 
   // allocate the audio blocks to transmit
-  block = allocate();
+  audio_block_t* block = allocate();
   if( block == nullptr )
   {
     Serial.println( "Failed to allocate" );
@@ -322,7 +331,7 @@ void SD_AUDIO_RECORDER::update_playing()
     m_mode = MODE::STOP;
   }
 
-  if( m_mode == MODE::OVERDUB )
+  if( is_overdubbing )
   {
     ASSERT_MSG( m_overdub_block == nullptr, "Leaking overdub block" );
     m_overdub_block = block;
@@ -398,6 +407,7 @@ void SD_AUDIO_RECORDER::stop_recording()
     // empty the record queue
     while( m_sd_record_queue.available() > 0 )
     {
+      Serial.println("Writing final blocks");
       m_recorded_audio_file.write( reinterpret_cast<byte*>(m_sd_record_queue.read_buffer()), 256 );
       m_sd_record_queue.release_buffer();
     }
