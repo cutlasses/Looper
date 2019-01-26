@@ -219,13 +219,15 @@ void loop()
           }
           case SD_AUDIO_RECORDER::MODE::RECORD_PLAY:
           {
+            looper_interface.set_recording( true, time_ms );
+            
             audio_recorder.start_record(); // start overdubbing
             
             break;
           }
           case SD_AUDIO_RECORDER::MODE::RECORD_OVERDUB:
           {
-            looper_interface.set_recording( true, time_ms );
+            looper_interface.set_recording( false, time_ms );
             
             audio_recorder.stop_record(); // stop overdubbing
             
