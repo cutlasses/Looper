@@ -158,8 +158,6 @@ void setup()
 
   Wire.begin( I2C_ADDRESS );
 
-  button_strip.set_sequence_length( 3000 ); // remove once time extracted from sample
-
   Serial.print("Setup finished!\n");
   delay(500);
 }
@@ -198,37 +196,44 @@ void loop()
       {
         Serial.print("CLICK ");
         Serial.println( SD_AUDIO_RECORDER::mode_to_string( audio_recorder.mode() ) );
-                
+
+        // TODO consider not exposing mode - only controls        
         switch( audio_recorder.mode() )
         {
           case SD_AUDIO_RECORDER::MODE::STOP:
           {
             // start recording over the top
-            audio_recorder.record();
+            audio_recorder.start_record();
             looper_interface.set_recording( true, time_ms );
-            
-            Serial.println("RECORD");
+
             break;
           }
-          case SD_AUDIO_RECORDER::MODE::OVERDUB:
-          case SD_AUDIO_RECORDER::MODE::RECORD:
+          case SD_AUDIO_RECORDER::MODE::RECORD_INITIAL:
           {
             // stop recording and play loop
-            audio_recorder.play();
+            audio_recorder.stop_record();
             looper_interface.set_recording( false, time_ms );
             button_strip.set_sequence_length( audio_recorder.play_back_file_time_ms() );
             
-            Serial.println("PLAY");
+            break;
+          }
+          case SD_AUDIO_RECORDER::MODE::RECORD_PLAY:
+          {
+            audio_recorder.start_record(); // start overdubbing
+            
+            break;
+          }
+          case SD_AUDIO_RECORDER::MODE::RECORD_OVERDUB:
+          {
+            looper_interface.set_recording( true, time_ms );
+            
+            audio_recorder.stop_record(); // stop overdubbing
+            
             break;
           }
           case SD_AUDIO_RECORDER::MODE::PLAY:
-          {
-             // start overdubbing
-            audio_recorder.overdub();
-            looper_interface.set_recording( true, time_ms );
-            button_strip.set_sequence_length( audio_recorder.play_back_file_time_ms() );
-            
-            Serial.println("OVERDUB");
+          { 
+            Serial.println("Record during play not supported"); // eventually this should record a sequence of key presses
             break;           
           }
           default:
@@ -238,11 +243,18 @@ void loop()
             break;
           }
         }
+
+        Serial.print("Post click: ");
+        Serial.println( SD_AUDIO_RECORDER::mode_to_string( audio_recorder.mode() ) );
       }
       else if( looper_interface.record_button().down_time_ms() > STOP_LOOP_BUTTON_DOWN_TIME_MS )
       {
         Serial.println("Hold Stop");
         audio_recorder.stop();
+
+        looper_interface.set_recording( false, time_ms );
+
+        button_strip.stop_sequence();
       }
       break;
     }

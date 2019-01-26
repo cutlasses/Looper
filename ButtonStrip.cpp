@@ -56,7 +56,7 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
   {
     m_next_i2c_time_stamp_ms = time_ms + LED_I2C_UPDATE_TIME_MS;
     
-    const uint8_t led_values = (1 << m_step_num);
+    const uint8_t led_values = m_running ? (1 << m_step_num) : 0;
     Wire.beginTransmission(m_i2c_address);
     Wire.write(led_values);
     Wire.endTransmission();
@@ -68,6 +68,14 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
 void BUTTON_STRIP::set_sequence_length( uint32_t sequence_length_ms )
 {
   m_step_length_ms = sequence_length_ms / NUM_SEGMENTS;
+
+  m_running   = true;
+  m_step_num  = 0;
+}
+
+void BUTTON_STRIP::stop_sequence()
+{
+  m_running = false;
 }
 
  int BUTTON_STRIP::num_segments() const

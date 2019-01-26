@@ -12,8 +12,9 @@ public:
   {
     PLAY,
     STOP,
-    RECORD,
-    OVERDUB,
+    RECORD_INITIAL,       // record the original loop
+    RECORD_PLAY,          // duplicate the loop without overdubbing
+    RECORD_OVERDUB,  // overdub incoming audio onto the loop
   };
 
   SD_AUDIO_RECORDER();
@@ -25,8 +26,8 @@ public:
   void                play();
   void                play_file( const char* filename, bool loop );
   void                stop();
-  void                record();
-  void                overdub();
+  void                start_record();
+  void                stop_record();
 
   void                set_read_position( float t );
   
@@ -41,7 +42,7 @@ public:
 private:
 
   audio_block_t*      m_input_queue_array[1];
-  audio_block_t*      m_overdub_block;
+  audio_block_t*      m_just_played_block;   // block which was just played from the SD file
 
   MODE                m_mode;
   const char*         m_play_back_filename;
@@ -55,8 +56,6 @@ private:
   uint32_t            m_jump_position;
   bool                m_jump_pending;
 
-  bool                m_overdub_end_pending;
-
   bool                m_looping;
   
   static constexpr const int QUEUE_SIZE = 53; // matches the teensy audio library
@@ -67,15 +66,19 @@ private:
   void                stop_recording();
 
   bool                start_playing();
-  void                update_playing();
+  bool                update_playing();
   void                stop_playing();
 
   void                start_overdub();
-  void                stop_overdub();
 
   void                stop_current_mode( bool reset_play_file );
 
   void                switch_play_record_buffers();
+
+  inline bool         is_recording()
+  {
+    return m_mode == MODE::RECORD_INITIAL || m_mode == MODE::RECORD_PLAY || m_mode == MODE::RECORD_OVERDUB;           
+  }
 
   inline void         enable_SPI_audio()
   {

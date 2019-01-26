@@ -18,6 +18,8 @@ class BUTTON_STRIP
 
   uint64_t      m_next_i2c_time_stamp_ms    = 0;
 
+  bool          m_running                   = false;
+
   uint64_t      m_switch_time_stamps[NUM_SEGMENTS];
   
 public:
@@ -26,6 +28,7 @@ public:
   
   bool          update( uint32_t time_ms, uint32_t& activated_segment );
   void          set_sequence_length( uint32_t sequence_length_ms );
+  void          stop_sequence();
 
   int           num_segments() const;
 };
