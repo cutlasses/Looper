@@ -6,56 +6,62 @@
 BUTTON_STRIP::BUTTON_STRIP( int i2c_address ) :
   m_i2c_address( i2c_address )
 {
-  for( int i = 0; i < NUM_SEGMENTS; ++i )
-  {
-    m_switch_time_stamps[i] = 0;
-  }
 }
 
 bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
 {
+  bool step_advanced = false;
   if( time_ms > m_next_step_time_stamp_ms )
   {
     if( ++m_step_num >= NUM_SEGMENTS )
     {
       m_step_num = 0;
     }
-    
+
+    step_advanced = true;
     m_next_step_time_stamp_ms = time_ms + m_step_length_ms;
   }
 
   bool step_triggered = false;
   for( int i = 0; i < NUM_SEGMENTS; ++i )
   {
-    const uint8_t bit_on = 1 << i;
-    uint64_t& time_stamp = m_switch_time_stamps[i];
-    if( m_switch_values & bit_on )
+    const uint8_t bit_on        = 1 << i;
+    DEBOUNCE_DETAILS& debounce  = m_debounce_details[i];
+    const bool button_down      = m_switch_values & bit_on;
+
+    if( button_down != debounce.m_button_down )
     {
-      //Serial.print("Button press ");
-      //Serial.println(i);
-      if( time_ms - time_stamp > BUTTON_DEBOUNCE_MS )
-      {
+      // state change - record time stamp
+      debounce.m_time_stamp     = time_ms;
+      debounce.m_button_down    = button_down;
+      debounce.m_registered     = false;
+    }
+
+    if( debounce.m_button_down &&
+        !debounce.m_registered &&
+        ( (time_ms - debounce.m_time_stamp) > BUTTON_DEBOUNCE_MS ) )
+    {
+        debounce.m_registered = true;
+        
         m_step_num = i;
         activated_segment = i;
         step_triggered = true;
-      }
-      time_stamp = time_ms;
-            
-      //next_step_time_stamp = millis() + step_time_ms;
-      break; // only interested in the lowest button
+        
+
+        break; // only interested in the lowest button
     }
   }
 
   
   // read switch values
-  Wire.requestFrom( m_i2c_address, 1);
-  m_switch_values = Wire.read();
+  if( Wire.requestFrom( m_i2c_address, 1) )
+  {
+    m_switch_values = Wire.read();
+  }
 
   // write led values
-  if( time_ms > m_next_i2c_time_stamp_ms )
-  {
-    m_next_i2c_time_stamp_ms = time_ms + LED_I2C_UPDATE_TIME_MS;
-    
+  if( step_advanced )
+  {    
     const uint8_t led_values = m_running ? (1 << m_step_num) : 0;
     Wire.beginTransmission(m_i2c_address);
     Wire.write(led_values);
@@ -65,12 +71,14 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
   return step_triggered;
 }
 
-void BUTTON_STRIP::set_sequence_length( uint32_t sequence_length_ms )
+void BUTTON_STRIP::start_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms )
 {
-  m_step_length_ms = sequence_length_ms / NUM_SEGMENTS;
-
-  m_running   = true;
-  m_step_num  = 0;
+  m_step_length_ms          = sequence_length_ms / NUM_SEGMENTS;
+  Serial.println(sequence_length_ms);
+    
+  m_running                 = true;
+  m_step_num                = NUM_SEGMENTS; // next update will move to step 0
+  m_next_step_time_stamp_ms = current_time_ms;
 }
 
 void BUTTON_STRIP::stop_sequence()

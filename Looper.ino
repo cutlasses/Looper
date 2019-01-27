@@ -186,7 +186,7 @@ void loop()
         Serial.println( sample_files[sample_index] );
         
         audio_recorder.play_file( sample_files[ sample_index ], true );
-        button_strip.set_sequence_length( audio_recorder.play_back_file_time_ms() );
+        button_strip.start_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
       }
       break;
     }
@@ -213,7 +213,7 @@ void loop()
             // stop recording and play loop
             audio_recorder.stop_record();
             looper_interface.set_recording( false, time_ms );
-            button_strip.set_sequence_length( audio_recorder.play_back_file_time_ms() );
+            button_strip.start_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
             
             break;
           }
