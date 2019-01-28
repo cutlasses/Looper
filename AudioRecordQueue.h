@@ -51,7 +51,7 @@ public:
     if( m_user_block != nullptr )
     {
       m_audio_producer.release_block_func( m_user_block );
-      m_user_block = NULL;
+      m_user_block = nullptr;
     }
   
     while( m_tail != m_head )
@@ -108,12 +108,14 @@ public:
   
     if( block == nullptr )
     {
+      Serial.println("null block in record queue");
       return;
     }
   
     if( !m_enabled )
     {
       // don't need to store it when not recording
+      Serial.println("DISCARD");
       m_audio_producer.release_block_func( block );
       return;
     }

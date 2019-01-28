@@ -69,8 +69,6 @@ private:
   bool                update_playing();
   void                stop_playing();
 
-  void                start_overdub();
-
   void                stop_current_mode( bool reset_play_file );
 
   void                switch_play_record_buffers();
