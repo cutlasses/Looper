@@ -6,7 +6,6 @@
 constexpr const char* RECORDING_FILENAME1 = "RECORD1.RAW";
 constexpr const char* RECORDING_FILENAME2 = "RECORD2.RAW";
 
-int g_current_allocations = 0;
 
 SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   AudioStream( 1, m_input_queue_array ),
@@ -269,10 +268,6 @@ audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
   {
     ASSERT_MSG( m_just_played_block != nullptr, "Cannot overdub, no just_played_block" ); // can it be null if overdub exceeds original play file?
     audio_block_t* in_block = receiveWritable();
-    if( in_block != nullptr )
-    {
-      ++g_current_allocations;
-    }
     ASSERT_MSG( in_block != nullptr, "Overdub - unable to receive block" );
 
     // mix incoming audio with recorded audio ( from update_playing() ) then release
@@ -298,7 +293,6 @@ audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
 
     if( m_just_played_block != nullptr )
     {
-      --g_current_allocations;
       release( m_just_played_block );
       m_just_played_block = nullptr;
     }
@@ -308,10 +302,6 @@ audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
   else
   {
     audio_block_t* in_block = receiveReadOnly();
-    if( in_block != nullptr )
-    {
-      ++g_current_allocations;
-    }
     ASSERT_MSG( in_block != nullptr, "Play/Record Initial - unable to receive block" );
     return in_block;
   }
@@ -319,10 +309,6 @@ audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
 
 void SD_AUDIO_RECORDER::release_block_func(audio_block_t* block)
 {
-  if( block != nullptr )
-  {
-    --g_current_allocations;
-  }
   release(block);
 }
 
@@ -373,7 +359,6 @@ bool SD_AUDIO_RECORDER::update_playing()
     Serial.println( "Failed to allocate" );
     return false;
   }
-  ++g_current_allocations;
 
   if( m_play_back_audio_file.available() )
   {
@@ -404,7 +389,6 @@ bool SD_AUDIO_RECORDER::update_playing()
   else
   {
     release(block);
-    --g_current_allocations;
   }
 
   return finished;
