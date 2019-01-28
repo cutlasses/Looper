@@ -39,12 +39,14 @@ IO io;
 
 SD_AUDIO_RECORDER audio_recorder;
 
+AudioAmplifier    input_gain;
 AudioMixer4       mixer;
 
-AudioConnection   patch_cord_1( io.audio_input, 0, audio_recorder, 0 );
-AudioConnection   patch_cord_2( io.audio_input, 0, mixer, 0 );
-AudioConnection   patch_cord_3( audio_recorder, 0, mixer, 1 );
-AudioConnection   patch_cord_4( mixer, 0, io.audio_output, 0 );
+AudioConnection   patch_cord_1( io.audio_input, 0, input_gain, 0 );
+AudioConnection   patch_cord_2( input_gain, 0, audio_recorder, 0 );
+AudioConnection   patch_cord_3( io.audio_input, 0, mixer, 0 );
+AudioConnection   patch_cord_4( audio_recorder, 0, mixer, 1 );
+AudioConnection   patch_cord_5( mixer, 0, io.audio_output, 0 );
 
 BUTTON_STRIP      button_strip( I2C_ADDRESS );
 
@@ -126,6 +128,8 @@ void setup()
 
   constexpr int mem_size = 512;
   AudioMemory( mem_size );
+
+  input_gain.gain(0.4f);
 
   analogReference(INTERNAL);
 

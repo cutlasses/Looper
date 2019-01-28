@@ -51,14 +51,10 @@ void SD_AUDIO_RECORDER::update()
       {
         if( m_looping )
         {
-          __disable_irq();
-    
           Serial.println("Play - loop");
     
           start_playing();
           m_mode = MODE::PLAY;
-          
-          __enable_irq();
         }
         else
         {
@@ -89,15 +85,11 @@ void SD_AUDIO_RECORDER::update()
       // has the loop just finished
       if( finished )
       {
-        __disable_irq();
-
         switch_play_record_buffers();
 
         stop_recording();
         start_playing();
         start_recording();
-
-        __enable_irq();
       }
 
       break;
@@ -136,8 +128,6 @@ void SD_AUDIO_RECORDER::play_file( const char* filename, bool loop )
     Serial.println("Stop play named file");
     stop_current_mode( false );
   }
-
-  __disable_irq();
   
   if( start_playing() )
   {
@@ -147,8 +137,6 @@ void SD_AUDIO_RECORDER::play_file( const char* filename, bool loop )
   {
     m_mode = MODE::STOP;
   }
-  
-  __enable_irq();
 }
 
 void SD_AUDIO_RECORDER::stop()
@@ -176,9 +164,7 @@ void SD_AUDIO_RECORDER::start_record()
       m_play_back_filename  = RECORDING_FILENAME1;
       m_record_filename     = RECORDING_FILENAME2;
 
-      __disable_irq();    // is disabling irq necessary?
       start_recording();
-      __enable_irq();
 
       m_mode = MODE::RECORD_INITIAL;
       
@@ -209,14 +195,12 @@ void SD_AUDIO_RECORDER::stop_record()
   {
     case MODE::RECORD_INITIAL:
     {
-      __disable_irq();    // is disabling irq necessary?
       stop_recording();
 
       switch_play_record_buffers();
 
       start_playing();
       start_recording();
-      __enable_irq();
 
       m_mode = MODE::RECORD_PLAY;
         
@@ -301,8 +285,9 @@ audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
   }
   else
   {
+    ASSERT_MSG( m_mode == MODE::RECORD_INITIAL, "What mode is this?" );
     audio_block_t* in_block = receiveReadOnly();
-    ASSERT_MSG( in_block != nullptr, "Play/Record Initial - unable to receive block" );
+    ASSERT_MSG( in_block != nullptr, "Record Initial - unable to receive block" );
     return in_block;
   }
 }
@@ -321,8 +306,9 @@ bool SD_AUDIO_RECORDER::start_playing()
   stop_playing();
 
   enable_SPI_audio();
-
+  __disable_irq();
   m_play_back_audio_file = SD.open( m_play_back_filename );
+  __enable_irq();
   
   if( !m_play_back_audio_file )
   {
@@ -397,13 +383,15 @@ bool SD_AUDIO_RECORDER::update_playing()
 void SD_AUDIO_RECORDER::stop_playing()
 {
   Serial.println("SD_AUDIO_RECORDER::stop_playing");
-  
+
+  __disable_irq();
   if( m_mode == MODE::PLAY || m_mode == MODE::RECORD_PLAY || m_mode == MODE::RECORD_OVERDUB )
   {    
     m_play_back_audio_file.close();
     
     disable_SPI_audio();
   }
+  __enable_irq();
 }
 
 void SD_AUDIO_RECORDER::start_recording()
@@ -467,9 +455,7 @@ void SD_AUDIO_RECORDER::stop_recording()
 }
 
 void SD_AUDIO_RECORDER::stop_current_mode( bool reset_play_file )
-{
-  __disable_irq();
-  
+{ 
   switch( m_mode )
   {
     case MODE::PLAY:
@@ -499,8 +485,6 @@ void SD_AUDIO_RECORDER::stop_current_mode( bool reset_play_file )
   {
     m_play_back_filename = m_record_filename = RECORDING_FILENAME1;
   }
-
-  __enable_irq();
 }
 
 void SD_AUDIO_RECORDER::switch_play_record_buffers()
