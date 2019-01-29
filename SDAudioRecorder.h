@@ -21,6 +21,9 @@ public:
 
   virtual void        update() override;
 
+  void                update_low_rate();    // this is called outside the audio library update() which is interrupt driven
+                                            // the relatively slow SD operations should be performed here
+
   MODE                mode() const;
   
   void                play();
@@ -57,6 +60,7 @@ private:
   bool                m_jump_pending;
 
   bool                m_looping;
+  bool                m_finished_playback;
   
   static constexpr const int QUEUE_SIZE = 53; // matches the teensy audio library
   AUDIO_RECORD_QUEUE<QUEUE_SIZE, SD_AUDIO_RECORDER>  m_sd_record_queue;

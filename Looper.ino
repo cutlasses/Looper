@@ -271,10 +271,12 @@ void loop()
     }
   }
 
+  audio_recorder.update_low_rate();
+
   const float mix = looper_interface.mix();
   mixer.gain( 0, 1.0f - mix );
   mixer.gain( 1, mix );
-  
+
   uint32_t segment;
   if( button_strip.update( time_ms, segment ) )
   {

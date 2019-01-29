@@ -20,6 +20,7 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   m_jump_position(0),
   m_jump_pending(false),
   m_looping(false),
+  m_finished_playback(false),
   m_sd_record_queue(*this)
 {
 
@@ -34,6 +35,44 @@ void SD_AUDIO_RECORDER::update()
   {
     case MODE::PLAY:
     {
+      if( !m_finished_playback )
+      {
+        m_finished_playback = update_playing();
+      }
+      break; 
+    }
+    case MODE::RECORD_INITIAL:
+    {
+      m_sd_record_queue.update();
+
+      break;
+    }
+    case MODE::RECORD_PLAY:
+    case MODE::RECORD_OVERDUB:
+    {
+      if( !m_finished_playback )
+      { 
+        m_finished_playback = update_playing();
+      }
+
+      // update after updating play to capture buffer for overdub
+      m_sd_record_queue.update();
+
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
+}
+
+void SD_AUDIO_RECORDER::update_low_rate()
+{
+  switch( m_mode )
+  {
+    case MODE::PLAY:
+    {
       if( m_jump_pending )
       {
         if( m_play_back_audio_file.seek( m_jump_position ) )
@@ -42,13 +81,9 @@ void SD_AUDIO_RECORDER::update()
           m_play_back_file_offset = m_jump_position;
         }
       }
-      
-      const bool finished = update_playing();
 
-      m_sd_record_queue.update();
-
-      if( finished )
-      {
+      if( m_finished_playback )
+      {        
         if( m_looping )
         {
           Serial.println("Play - loop");
@@ -60,36 +95,27 @@ void SD_AUDIO_RECORDER::update()
         {
           m_mode = MODE::STOP;
         }
+
+        m_finished_playback = false;
       }
       break; 
     }
     case MODE::RECORD_INITIAL:
-    {
-      // update after updating play to capture buffer for overdub
-      m_sd_record_queue.update();
-        
-      update_recording();
-
-      break;
-    }
     case MODE::RECORD_PLAY:
     case MODE::RECORD_OVERDUB:
-    { 
-      const bool finished = update_playing();
-
-      // update after updating play to capture buffer for overdub
-      m_sd_record_queue.update();
-        
+    {
       update_recording();
-
+      
       // has the loop just finished
-      if( finished )
-      {
+      if( m_finished_playback )
+      {   
         switch_play_record_buffers();
 
         stop_recording();
         start_playing();
         start_recording();
+
+        m_finished_playback = false;
       }
 
       break;
@@ -361,9 +387,8 @@ bool SD_AUDIO_RECORDER::update_playing()
   {
     Serial.println("File End");
     m_play_back_audio_file.close();
-    
     disable_SPI_audio();
-    
+            
     finished = true;
   }
 
