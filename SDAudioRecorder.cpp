@@ -6,7 +6,6 @@
 constexpr const char* RECORDING_FILENAME1 = "RECORD1.RAW";
 constexpr const char* RECORDING_FILENAME2 = "RECORD2.RAW";
 
-
 SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   AudioStream( 1, m_input_queue_array ),
   m_just_played_block( nullptr ),
@@ -21,42 +20,41 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   m_jump_pending(false),
   m_looping(false),
   m_finished_playback(false),
-  m_sd_record_queue(*this)
+  m_sd_play_queue(*this, "PLAY_QUEUE" ),
+  m_sd_record_queue(*this, "RECORD_QUEUE" )
 {
-
+    m_sd_play_queue.start();
 }
 
 void SD_AUDIO_RECORDER::update()
 {  
-  //Serial.print( "update() MODE:" );
-  //Serial.println( mode_to_string( m_mode ) );
+  if( m_mode != MODE::STOP )
+  {
+    Serial.print( "update() MODE:" );
+    Serial.println( mode_to_string( m_mode ) );
+  }
     
   switch( m_mode )
   {
     case MODE::PLAY:
     {
-      if( !m_finished_playback )
-      {
-        m_finished_playback = update_playing();
-      }
+      update_playing_interrupt();
+
       break; 
     }
     case MODE::RECORD_INITIAL:
     {
-      m_sd_record_queue.update();
+      m_sd_record_queue.update( create_record_block() );
 
       break;
     }
     case MODE::RECORD_PLAY:
     case MODE::RECORD_OVERDUB:
     {
-      if( !m_finished_playback )
-      { 
-        m_finished_playback = update_playing();
-      }
+      update_playing_interrupt();
 
       // update after updating play to capture buffer for overdub
-      m_sd_record_queue.update();
+      m_sd_record_queue.update( create_record_block() );
 
       break;
     }
@@ -69,6 +67,11 @@ void SD_AUDIO_RECORDER::update()
 
 void SD_AUDIO_RECORDER::update_low_rate()
 {
+  //Serial.print( "update_low_rate() MODE:" );
+  //Serial.println( mode_to_string( m_mode ) );
+
+  //Serial.println("SD_AUDIO_RECORDER::update_low_rate() ENTER");
+  
   switch( m_mode )
   {
     case MODE::PLAY:
@@ -88,7 +91,7 @@ void SD_AUDIO_RECORDER::update_low_rate()
         {
           Serial.println("Play - loop");
     
-          start_playing();
+          start_playing_sd();
           m_mode = MODE::PLAY;
         }
         else
@@ -101,22 +104,36 @@ void SD_AUDIO_RECORDER::update_low_rate()
       break; 
     }
     case MODE::RECORD_INITIAL:
+    {
+      update_recording_sd();
+
+      break;
+    }
     case MODE::RECORD_PLAY:
     case MODE::RECORD_OVERDUB:
     {
-      update_recording();
+      Serial.println( "Update RECORD_PLAY not interrupt START **" );
+      m_finished_playback = update_playing_sd();
+      
+      update_recording_sd();
       
       // has the loop just finished
       if( m_finished_playback )
       {   
+        Serial.println("SD_AUDIO_RECORDER::update_low_rate() FINISH");
+
+        m_play_back_audio_file.close();
+        
         switch_play_record_buffers();
 
-        stop_recording();
-        start_playing();
-        start_recording();
+        stop_recording_sd();
+        start_playing_sd();
+        start_recording_sd();
 
         m_finished_playback = false;
       }
+
+      Serial.println( "Update RECORD_PLAY not interrupt END **" );
 
       break;
     }
@@ -125,6 +142,8 @@ void SD_AUDIO_RECORDER::update_low_rate()
       break;
     }
   }
+
+  //Serial.println("SD_AUDIO_RECORDER::update_low_rate() EXIT");
 }
 
 SD_AUDIO_RECORDER::MODE SD_AUDIO_RECORDER::mode() const
@@ -155,7 +174,7 @@ void SD_AUDIO_RECORDER::play_file( const char* filename, bool loop )
     stop_current_mode( false );
   }
   
-  if( start_playing() )
+  if( start_playing_sd() )
   {
     m_mode = MODE::PLAY;
   }
@@ -190,7 +209,7 @@ void SD_AUDIO_RECORDER::start_record()
       m_play_back_filename  = RECORDING_FILENAME1;
       m_record_filename     = RECORDING_FILENAME2;
 
-      start_recording();
+      start_recording_sd();
 
       m_mode = MODE::RECORD_INITIAL;
       
@@ -221,12 +240,12 @@ void SD_AUDIO_RECORDER::stop_record()
   {
     case MODE::RECORD_INITIAL:
     {
-      stop_recording();
+      stop_recording_sd();
 
       switch_play_record_buffers();
 
-      start_playing();
-      start_recording();
+      start_playing_sd();
+      start_recording_sd();
 
       m_mode = MODE::RECORD_PLAY;
         
@@ -262,7 +281,7 @@ void SD_AUDIO_RECORDER::set_read_position( float t )
  }
 }
 
-audio_block_t* SD_AUDIO_RECORDER::aquire_block_func()
+audio_block_t* SD_AUDIO_RECORDER::create_record_block()
 {
   // if overdubbing, add incoming audio, otherwise re-record the original audio
   if( m_mode == MODE::RECORD_PLAY )
@@ -323,13 +342,13 @@ void SD_AUDIO_RECORDER::release_block_func(audio_block_t* block)
   release(block);
 }
 
-bool SD_AUDIO_RECORDER::start_playing()
+bool SD_AUDIO_RECORDER::start_playing_sd()
 {
   Serial.print("SD_AUDIO_RECORDER::start_playing ");
   Serial.println( m_play_back_filename );
   
   // copied from https://github.com/PaulStoffregen/Audio/blob/master/play_sd_raw.cpp
-  stop_playing();
+  stop_playing_sd();
 
   enable_SPI_audio();
   __disable_irq();
@@ -356,56 +375,92 @@ bool SD_AUDIO_RECORDER::start_playing()
   Serial.print("File open - file size: ");
   Serial.println(m_play_back_file_size);
 
+  // prime the first read block in the read queue
+  const int initial_blocks = 8;
+  for( int i = 0; i < initial_blocks; ++i )
+  {
+    update_playing_sd();
+  }
+
+  Serial.println( "start_playing_sd() END" );
+
   return true;
 }
 
-bool SD_AUDIO_RECORDER::update_playing()
+bool SD_AUDIO_RECORDER::update_playing_sd()
 {
   bool finished = false;
-  const bool set_just_played_block = is_recording();
-
-  // allocate the audio blocks to transmit
-  audio_block_t* block = allocate();
-  if( block == nullptr )
-  {
-    Serial.println( "Failed to allocate" );
-    return false;
-  }
 
   if( m_play_back_audio_file.available() )
-  {
-    // we can read more data from the file...
-    const uint32_t n = m_play_back_audio_file.read( block->data, AUDIO_BLOCK_SAMPLES*2 );
-    m_play_back_file_offset += n;
-    for( int i = n/2; i < AUDIO_BLOCK_SAMPLES; i++ )
+  {    
+    if( m_sd_play_queue.remaining() > 0 )
     {
-      block->data[i] = 0;
+      // allocate the audio blocks to transmit
+      audio_block_t* block = allocate();
+      if( block == nullptr )
+      {
+        Serial.println( "update_playing_sd() - Failed to allocate" );
+        return false;
+      }
+    
+      // we can read more data from the file...
+      const uint32_t n = m_play_back_audio_file.read( block->data, AUDIO_BLOCK_SAMPLES*2 );
+      m_play_back_file_offset += n;
+      for( int i = n/2; i < AUDIO_BLOCK_SAMPLES; i++ )
+      {
+        block->data[i] = 0;
+      }
+  
+      m_sd_play_queue.update( block );
+      Serial.print( "update_playing_sd() ADD BLOCK:" );
+      Serial.println( (int)block, HEX );
+      m_sd_play_queue.debug_log_stats();
     }
-    transmit(block);
   }
   else
   {
-    Serial.println("File End");
-    m_play_back_audio_file.close();
+    Serial.print("File End ");
+    Serial.println(m_play_back_audio_file.name());
+
     disable_SPI_audio();
             
     finished = true;
   }
 
-  if( set_just_played_block )
-  {
-    ASSERT_MSG( m_just_played_block == nullptr, "Leaking just_played_block" );
-    m_just_played_block = block;
-  }
-  else
-  {
-    release(block);
-  }
-
   return finished;
 }
 
-void SD_AUDIO_RECORDER::stop_playing()
+void SD_AUDIO_RECORDER::update_playing_interrupt()
+{
+  if( m_sd_play_queue.size() > 0 )
+  {
+    const bool set_just_played_block = is_recording();
+
+    audio_block_t* block = m_sd_play_queue.read_block();
+    ASSERT_MSG( block != nullptr, "update_playing_interrupt() null block" );
+    transmit( block );  
+    m_sd_play_queue.release_buffer(false);
+    Serial.print( "update_playing_interrupt() REMOVE BLOCK:" );
+    Serial.println( (int)block, HEX );
+    m_sd_play_queue.debug_log_stats();
+    
+    if( set_just_played_block )
+    {
+      ASSERT_MSG( m_just_played_block == nullptr, "Leaking just_played_block" );
+      m_just_played_block = block;
+    }
+    else
+    {
+      release(block);
+    }
+  }
+  else
+  {
+    ASSERT_MSG( m_finished_playback, "PLAY QUEUE EMPTY!!" );
+  }
+}
+
+void SD_AUDIO_RECORDER::stop_playing_sd()
 {
   Serial.println("SD_AUDIO_RECORDER::stop_playing");
 
@@ -417,9 +472,12 @@ void SD_AUDIO_RECORDER::stop_playing()
     disable_SPI_audio();
   }
   __enable_irq();
+
+  // TODO - do we need to write the rest of the queue?
+  //m_sd_play_queue.stop();
 }
 
-void SD_AUDIO_RECORDER::start_recording()
+void SD_AUDIO_RECORDER::start_recording_sd()
 {  
   Serial.print("SD_AUDIO_RECORDER::start_recording ");
   Serial.println(m_record_filename);
@@ -444,9 +502,9 @@ void SD_AUDIO_RECORDER::start_recording()
   }
 }
 
-void SD_AUDIO_RECORDER::update_recording()
+void SD_AUDIO_RECORDER::update_recording_sd()
 {
-  if( m_sd_record_queue.available() >= 2 )
+  if( m_sd_record_queue.size() >= 2 )
   {
     byte buffer[512]; // arduino library most efficient with full 512 sector size writes
 
@@ -456,11 +514,13 @@ void SD_AUDIO_RECORDER::update_recording()
     memcpy( buffer + 256, m_sd_record_queue.read_buffer(), 256);
     m_sd_record_queue.release_buffer();
 
+    //Serial.println("SD_AUDIO_RECORDER::update_recording() START WRITE ");
     m_recorded_audio_file.write( buffer, 512 );
+    Serial.println("SD_AUDIO_RECORDER::update_recording() END WRITE ");
   }
 }
 
-void SD_AUDIO_RECORDER::stop_recording()
+void SD_AUDIO_RECORDER::stop_recording_sd()
 {
   Serial.println("SD_AUDIO_RECORDER::stop_recording");
   m_sd_record_queue.stop();
@@ -468,7 +528,7 @@ void SD_AUDIO_RECORDER::stop_recording()
   if( is_recording() )
   {
     // empty the record queue
-    while( m_sd_record_queue.available() > 0 )
+    while( m_sd_record_queue.size() > 0 )
     {
       Serial.println("Writing final blocks");
       m_recorded_audio_file.write( reinterpret_cast<byte*>(m_sd_record_queue.read_buffer()), 256 );
@@ -485,19 +545,19 @@ void SD_AUDIO_RECORDER::stop_current_mode( bool reset_play_file )
   {
     case MODE::PLAY:
     {
-      stop_playing();
+      stop_playing_sd();
       break; 
     }
     case MODE::RECORD_INITIAL:
     {
-      stop_recording();
+      stop_recording_sd();
       break;
     }
     case MODE::RECORD_PLAY:
     case MODE::RECORD_OVERDUB:
     {
-      stop_playing();
-      stop_recording();
+      stop_playing_sd();
+      stop_recording_sd();
       break;
     }
     default:
