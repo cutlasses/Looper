@@ -144,6 +144,7 @@ public:
     {
       // don't need to store it when not recording
       Serial.println("DISCARD");
+      debug_log_stats();
       m_audio_producer.release_block_func( block );
       return;
     }

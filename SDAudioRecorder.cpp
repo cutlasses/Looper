@@ -107,16 +107,16 @@ void SD_AUDIO_RECORDER::update_low_rate()
       
       // has the loop just finished
       if( m_finished_playback )
-      {
-        m_play_back_audio_file.close();
-        
+      { 
         switch_play_record_buffers();
 
+        AudioNoInterrupts();
         stop_recording_sd();
         start_playing_sd();
         start_recording_sd();
 
         m_finished_playback = false;
+        AudioInterrupts();
       }
 
       break;
