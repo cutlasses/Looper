@@ -132,7 +132,7 @@ public:
     m_user_block = nullptr;    
   }
 
-  void update( audio_block_t* block )
+  void add_block( audio_block_t* block )
   {   
     if( block == nullptr )
     {
