@@ -37,14 +37,12 @@ public:
 
   void start()
   {
-    Serial.println( "AUDIO_RECORD_QUEUE::start" );
     clear();
     m_enabled = true;    
   }
   
   void stop()
   {
-    Serial.println( "AUDIO_RECORD_QUEUE::stop" );
     m_enabled = false;
   }
   

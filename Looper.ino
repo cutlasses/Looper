@@ -177,25 +177,35 @@ void loop()
     audio_recorder.stop();
   }
 
+  static bool in_loop_mode = looper_interface.mode() == LOOPER_INTERFACE::MODE::LOOPER;
+
   switch( looper_interface.mode() )
   {
     case LOOPER_INTERFACE::MODE::SD_PLAYBACK:
     {
-      int sample_index( 0 );
-      if( looper_interface.sample_to_play( sample_index ) )
+      if( in_loop_mode )
       {
-        Serial.print("Playing:");
-        Serial.print(sample_index);
-        Serial.print(", ");
-        Serial.println( sample_files[sample_index] );
-        
-        audio_recorder.play_file( sample_files[ sample_index ], true );
-        button_strip.start_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
+        audio_recorder.play();
+
+        // button strip sequence already playing
+        //button_strip.start_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
       }
+
+      in_loop_mode = false;
+
       break;
     }
     case LOOPER_INTERFACE::MODE::LOOPER:
     {
+      if( !in_loop_mode )
+      {
+        // TODO - do we want to stop here?
+        audio_recorder.stop();
+        button_strip.stop_sequence();
+      }
+      
+      in_loop_mode = true;
+      
       if( looper_interface.record_button().single_click() )
       {
         Serial.print("CLICK ");

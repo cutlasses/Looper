@@ -61,7 +61,7 @@ private:
   bool                m_looping;
   bool                m_finished_playback;
 
-  static constexpr const int PLAY_QUEUE_SIZE    = 16;
+  static constexpr const int PLAY_QUEUE_SIZE    = 32;
   static constexpr const int RECORD_QUEUE_SIZE  = 53; // matches the teensy audio library
   AUDIO_RECORD_QUEUE<PLAY_QUEUE_SIZE, SD_AUDIO_RECORDER>    m_sd_play_queue;
   AUDIO_RECORD_QUEUE<RECORD_QUEUE_SIZE, SD_AUDIO_RECORDER>  m_sd_record_queue;
@@ -71,7 +71,7 @@ private:
   // X_sd functions access the SD card - therefore should not be called within the update() interrupt
   void                start_recording_sd();
   void                update_recording_sd();
-  void                stop_recording_sd();
+  void                stop_recording_sd( bool write_remaining_blocks = true );
 
   bool                start_playing_sd();
   bool                update_playing_sd();
