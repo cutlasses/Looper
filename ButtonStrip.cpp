@@ -74,7 +74,6 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
 void BUTTON_STRIP::start_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms )
 {
   m_step_length_ms          = sequence_length_ms / NUM_SEGMENTS;
-  Serial.println(sequence_length_ms);
     
   m_running                 = true;
   m_step_num                = NUM_SEGMENTS; // next update will move to step 0

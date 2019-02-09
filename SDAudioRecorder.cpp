@@ -371,8 +371,7 @@ bool SD_AUDIO_RECORDER::start_playing_sd()
   Serial.println(m_play_back_file_size);
 
   // prime the first read block in the read queue
-  const int initial_blocks = 8;
-  for( int i = 0; i < initial_blocks; ++i )
+  for( int i = 0; i < INITIAL_PLAY_BLOCKS; ++i )
   {
     update_playing_sd();
   }
@@ -491,7 +490,10 @@ void SD_AUDIO_RECORDER::start_recording_sd()
 
 void SD_AUDIO_RECORDER::update_recording_sd()
 {
-  if( m_sd_record_queue.size() >= 2 )
+  // Simple balancing system to keep play queue from emptying whilst preventing record queue from getting full
+  const int record_queue_size = m_sd_record_queue.size(); 
+  if( record_queue_size >= 2 && 
+      ( m_sd_play_queue.size() >= MIN_PREFERRED_PLAY_BLOCKS || record_queue_size >= MAX_PREFERRED_RECORD_BLOCKS ) )
   {
     byte buffer[512]; // arduino library most efficient with full 512 sector size writes
 
@@ -515,9 +517,10 @@ void SD_AUDIO_RECORDER::stop_recording_sd( bool write_remaining_blocks )
     // empty the record queue
     if( write_remaining_blocks )
     {
+      Serial.print("Writing final blocks:");
+      Serial.println( m_sd_record_queue.size() );
       while( m_sd_record_queue.size() > 0 )
       {
-        Serial.println("Writing final blocks");
         m_recorded_audio_file.write( reinterpret_cast<byte*>(m_sd_record_queue.read_buffer()), 256 );
         m_sd_record_queue.release_buffer();
       }

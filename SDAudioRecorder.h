@@ -61,8 +61,11 @@ private:
   bool                m_looping;
   bool                m_finished_playback;
 
-  static constexpr const int PLAY_QUEUE_SIZE    = 32;
-  static constexpr const int RECORD_QUEUE_SIZE  = 53; // matches the teensy audio library
+  static constexpr const int PLAY_QUEUE_SIZE              = 32;
+  static constexpr const int RECORD_QUEUE_SIZE            = 53; // matches the teensy audio library
+  static constexpr const int INITIAL_PLAY_BLOCKS          = 8;
+  static constexpr const int MIN_PREFERRED_PLAY_BLOCKS    = 3;
+  static constexpr const int MAX_PREFERRED_RECORD_BLOCKS  = 40;
   AUDIO_RECORD_QUEUE<PLAY_QUEUE_SIZE, SD_AUDIO_RECORDER>    m_sd_play_queue;
   AUDIO_RECORD_QUEUE<RECORD_QUEUE_SIZE, SD_AUDIO_RECORDER>  m_sd_record_queue;
 
