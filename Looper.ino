@@ -187,6 +187,8 @@ void loop()
       {
         audio_recorder.play();
 
+        button_strip.lock_buttons( false );
+
         // button strip sequence already playing
         //button_strip.start_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
       }
@@ -197,6 +199,8 @@ void loop()
     }
     case LOOPER_INTERFACE::MODE::LOOPER:
     {
+      button_strip.lock_buttons( true );
+      
       if( !in_loop_mode )
       {
         // TODO - do we want to stop here?

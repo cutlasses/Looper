@@ -23,35 +23,38 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
   }
 
   bool step_triggered = false;
-  for( int i = 0; i < NUM_SEGMENTS; ++i )
+  
+  if( !m_buttons_locked )
   {
-    const uint8_t bit_on        = 1 << i;
-    DEBOUNCE_DETAILS& debounce  = m_debounce_details[i];
-    const bool button_down      = m_switch_values & bit_on;
-
-    if( button_down != debounce.m_button_down )
+    for( int i = 0; i < NUM_SEGMENTS; ++i )
     {
-      // state change - record time stamp
-      debounce.m_time_stamp     = time_ms;
-      debounce.m_button_down    = button_down;
-      debounce.m_registered     = false;
-    }
-
-    if( debounce.m_button_down &&
-        !debounce.m_registered &&
-        ( (time_ms - debounce.m_time_stamp) > BUTTON_DEBOUNCE_MS ) )
-    {
-        debounce.m_registered = true;
-        
-        m_step_num = i;
-        activated_segment = i;
-        step_triggered = true;
-        
-
-        break; // only interested in the lowest button
+      const uint8_t bit_on        = 1 << i;
+      DEBOUNCE_DETAILS& debounce  = m_debounce_details[i];
+      const bool button_down      = m_switch_values & bit_on;
+  
+      if( button_down != debounce.m_button_down )
+      {
+        // state change - record time stamp
+        debounce.m_time_stamp     = time_ms;
+        debounce.m_button_down    = button_down;
+        debounce.m_registered     = false;
+      }
+  
+      if( debounce.m_button_down &&
+          !debounce.m_registered &&
+          ( (time_ms - debounce.m_time_stamp) > BUTTON_DEBOUNCE_MS ) )
+      {
+          debounce.m_registered = true;
+          
+          m_step_num = i;
+          activated_segment = i;
+          step_triggered = true;
+          
+  
+          break; // only interested in the lowest button
+      }
     }
   }
-
   
   // read switch values
   if( Wire.requestFrom( m_i2c_address, 1) )
@@ -85,8 +88,14 @@ void BUTTON_STRIP::stop_sequence()
   m_running = false;
 }
 
- int BUTTON_STRIP::num_segments() const
- {
+
+void BUTTON_STRIP::lock_buttons( bool lock )
+{
+  m_buttons_locked = lock;
+}
+
+int BUTTON_STRIP::num_segments() const
+{
   return NUM_SEGMENTS;
- }
+}
 

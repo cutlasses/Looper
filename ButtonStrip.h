@@ -24,6 +24,7 @@ class BUTTON_STRIP
   uint64_t          m_next_step_time_stamp_ms   = 0;
 
   bool              m_running                   = false;
+  bool              m_buttons_locked            = false;
 
   DEBOUNCE_DETAILS  m_debounce_details[NUM_SEGMENTS];
   
@@ -34,6 +35,8 @@ public:
   bool              update( uint32_t time_ms, uint32_t& activated_segment );
   void              start_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms );
   void              stop_sequence();
+
+  void              lock_buttons( bool lock );
 
   int               num_segments() const;
 };
