@@ -27,6 +27,35 @@ inline bool _assert_fail( const char* assert, const char* msg )
 #define DEBUG_TEXT(x)
 #endif
 
+//#define SHOW_TIMED_SECTIONS
+
+#ifdef SHOW_TIMED_SECTIONS
+#define ADD_TIMED_SECTION(x) TIMED_SECTION __FILE__##__LINE__(x)
+#else
+#define ADD_TIMED_SECTION(x)
+#endif
+
+struct TIMED_SECTION
+{
+  const char* m_section_name;
+  uint64_t    m_start_time;
+
+  TIMED_SECTION( const char* section_name ) :
+    m_section_name( section_name ),
+    m_start_time( micros() )
+  {      
+  }
+
+  ~TIMED_SECTION()
+  {
+    const uint64_t duration = micros() - m_start_time;
+    Serial.print( m_section_name );
+    Serial.print(" ");
+    Serial.print( static_cast<int>(duration) );
+    Serial.println( "us" );
+  }
+};
+
 /////////////////////////////////////////////////////
 
 template <typename T>

@@ -29,7 +29,7 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
 }
 
 void SD_AUDIO_RECORDER::update()
-{      
+{        
   switch( m_mode )
   {
     case MODE::PLAY:
@@ -61,7 +61,7 @@ void SD_AUDIO_RECORDER::update()
   }
 }
 
-void SD_AUDIO_RECORDER::update_low_rate()
+void SD_AUDIO_RECORDER::update_main_loop()
 {  
   switch( m_mode )
   {
@@ -396,7 +396,12 @@ bool SD_AUDIO_RECORDER::update_playing_sd()
       }
     
       // we can read more data from the file...
-      const uint32_t n = m_play_back_audio_file.read( block->data, AUDIO_BLOCK_SAMPLES*2 );
+      uint32_t n = 0;
+      {
+        ADD_TIMED_SECTION( "Read time" );
+        n = m_play_back_audio_file.read( block->data, AUDIO_BLOCK_SAMPLES*2 );
+      }
+
       m_play_back_file_offset += n;
       for( int i = n/2; i < AUDIO_BLOCK_SAMPLES; i++ )
       {
@@ -502,7 +507,8 @@ void SD_AUDIO_RECORDER::update_recording_sd()
     m_sd_record_queue.release_buffer();
     memcpy( buffer + 256, m_sd_record_queue.read_buffer(), 256);
     m_sd_record_queue.release_buffer();
-    
+
+    ADD_TIMED_SECTION( "Write time" );
     m_recorded_audio_file.write( buffer, 512 );
   }
 }

@@ -285,7 +285,7 @@ void loop()
     }
   }
 
-  audio_recorder.update_low_rate();
+  audio_recorder.update_main_loop();
 
   const float mix = looper_interface.mix();
   mixer.gain( 0, 1.0f - mix );
