@@ -498,7 +498,7 @@ void SD_AUDIO_RECORDER::update_recording_sd()
   // Simple balancing system to keep play queue from emptying whilst preventing record queue from getting full
   const int record_queue_size = m_sd_record_queue.size(); 
   if( record_queue_size >= 2 && 
-      ( m_sd_play_queue.size() >= MIN_PREFERRED_PLAY_BLOCKS || record_queue_size >= MAX_PREFERRED_RECORD_BLOCKS ) )
+      ( m_mode == MODE::RECORD_INITIAL || m_sd_play_queue.size() >= MIN_PREFERRED_PLAY_BLOCKS || record_queue_size >= MAX_PREFERRED_RECORD_BLOCKS ) )
   {
     byte buffer[512]; // arduino library most efficient with full 512 sector size writes
 
