@@ -27,7 +27,7 @@ inline bool _assert_fail( const char* assert, const char* msg )
 #define DEBUG_TEXT(x)
 #endif
 
-#define SHOW_TIMED_SECTIONS
+//#define SHOW_TIMED_SECTIONS
 
 #ifdef SHOW_TIMED_SECTIONS
 #define ADD_TIMED_SECTION(x) TIMED_SECTION __FILE__##__LINE__(x)
