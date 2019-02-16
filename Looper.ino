@@ -193,6 +193,11 @@ void loop()
         //button_strip.start_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
       }
 
+      if( looper_interface.record_button().single_click() )
+      {
+        // sequence recording
+      }
+
       in_loop_mode = false;
 
       break;

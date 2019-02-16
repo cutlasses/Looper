@@ -8,6 +8,18 @@ BUTTON_STRIP::BUTTON_STRIP( int i2c_address ) :
 {
 }
 
+void BUTTON_STRIP::send_led_values(uint8_t led_values)
+{
+  Wire.beginTransmission(m_i2c_address);
+  Wire.write(led_values);
+  Wire.endTransmission();  
+}
+
+void BUTTON_STRIP::update_free_play()
+{
+  
+}
+
 bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
 {
   bool step_advanced = false;
@@ -44,12 +56,14 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
           !debounce.m_registered &&
           ( (time_ms - debounce.m_time_stamp) > BUTTON_DEBOUNCE_MS ) )
       {
-          debounce.m_registered = true;
+          // button pressed 
+          debounce.m_registered     = true;
           
-          m_step_num = i;
-          activated_segment = i;
-          step_triggered = true;
-          
+          m_step_num                = i;
+          activated_segment         = i;
+          step_triggered            = true;
+          step_advanced             = true;
+          m_next_step_time_stamp_ms = time_ms + m_step_length_ms;
   
           break; // only interested in the lowest button
       }
@@ -66,9 +80,7 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
   if( step_advanced )
   {    
     const uint8_t led_values = m_running ? (1 << m_step_num) : 0;
-    Wire.beginTransmission(m_i2c_address);
-    Wire.write(led_values);
-    Wire.endTransmission();
+    send_led_values( led_values );
   }
 
   return step_triggered;
