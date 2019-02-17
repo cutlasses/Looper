@@ -24,13 +24,13 @@ private:
   {
     bool            m_button_down               = false;
     bool            m_registered                = false;
-    uint64_t        m_time_stamp                = 0;
+    uint32_t        m_time_stamp                = 0;
   };
 
   struct SEQUENCE_EVENT
   {
-    uint64_t        m_time_stamp                = 0;
-    uint16_t        m_segment                   = 0;
+    uint32_t        m_time_stamp                = 0;
+    int16_t        m_segment                    = 0; // set to -1 for last event (end of loop)
   };
   
   const int         m_i2c_address; 
@@ -38,7 +38,7 @@ private:
   uint8_t           m_step_num                  = 0;
   
   uint32_t          m_step_length_ms            = 0;
-  uint64_t          m_next_step_time_stamp_ms   = 0;
+  uint32_t          m_next_step_time_stamp_ms   = 0;
 
   MODE              m_mode                      = MODE::FREE_PLAY;
 
@@ -48,10 +48,15 @@ private:
   DEBOUNCE_DETAILS  m_debounce_details[NUM_SEGMENTS];
 
   SEQUENCE_EVENT    m_sequence_events[MAX_SEQUENCE_EVENTS];
+  uint16_t          m_current_seq_event         = 0;
+  uint16_t          m_current_seq_num_events    = 0;
+  uint32_t          m_seq_start_time_stamp      = 0;
 
 
   void              send_led_values(uint8_t led_values);
-  void              update_free_play();
+  bool              update_free_play( uint32_t time_ms, uint32_t& activated_segment );
+  void              record_sequence_event( uint32_t time_ms, int32_t activated_segment );
+  void              stop_record_seqence( uint32_t time_ms );
   
 public:
 
@@ -59,6 +64,7 @@ public:
   
   bool              update( uint32_t time_ms, uint32_t& activated_segment );
   void              start_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms );
+  void              record_sequence(uint32_t time_ms );
   void              stop_sequence();
 
   void              lock_buttons( bool lock );

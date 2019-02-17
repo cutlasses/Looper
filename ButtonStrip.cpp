@@ -1,6 +1,7 @@
 #include <Wire.h>
 
 #include "ButtonStrip.h"
+#include "Util.h"
 
  
 BUTTON_STRIP::BUTTON_STRIP( int i2c_address ) :
@@ -15,14 +16,10 @@ void BUTTON_STRIP::send_led_values(uint8_t led_values)
   Wire.endTransmission();  
 }
 
-void BUTTON_STRIP::update_free_play()
+bool BUTTON_STRIP::update_free_play( uint32_t time_ms, uint32_t& activated_segment )
 {
-  
-}
-
-bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
-{
-  bool step_advanced = false;
+  bool step_triggered = false;
+  bool update_leds = false;
   if( time_ms > m_next_step_time_stamp_ms )
   {
     if( ++m_step_num >= NUM_SEGMENTS )
@@ -30,11 +27,9 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
       m_step_num = 0;
     }
 
-    step_advanced = true;
+    update_leds = true;
     m_next_step_time_stamp_ms = time_ms + m_step_length_ms;
   }
-
-  bool step_triggered = false;
   
   if( !m_buttons_locked )
   {
@@ -62,7 +57,7 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
           m_step_num                = i;
           activated_segment         = i;
           step_triggered            = true;
-          step_advanced             = true;
+          update_leds               = true;
           m_next_step_time_stamp_ms = time_ms + m_step_length_ms;
   
           break; // only interested in the lowest button
@@ -77,12 +72,47 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
   }
 
   // write led values
-  if( step_advanced )
+  if( update_leds )
   {    
     const uint8_t led_values = m_running ? (1 << m_step_num) : 0;
     send_led_values( led_values );
   }
 
+  return step_triggered;  
+}
+
+void BUTTON_STRIP::record_sequence_event( uint32_t time_ms, int32_t activated_segment )
+{
+  // TODO end the sequence (with final event) when it gets full
+  ASSERT_MSG( m_current_seq_num_events < MAX_SEQUENCE_EVENTS, "Max events exceeded" );
+  const uint32_t event_time = time_ms - m_seq_start_time_stamp;
+  SEQUENCE_EVENT& event     = m_sequence_events[ m_current_seq_num_events++ ];
+  event.m_time_stamp        = event_time;
+  event.m_segment           = activated_segment;
+}
+
+bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
+{
+  bool step_triggered = false;
+
+  switch( m_mode )
+  {
+    case MODE::FREE_PLAY:
+    case MODE::RECORD_SEQ:
+    {
+      step_triggered = update_free_play( time_ms, activated_segment );
+
+      if( m_mode == MODE::RECORD_SEQ && step_triggered )
+      {
+        record_sequence_event( time_ms, activated_segment );
+      }
+      break;
+    }
+    case MODE::PLAY_SEQ:
+    {
+      break;
+    }      
+  }
   return step_triggered;
 }
 
@@ -93,6 +123,19 @@ void BUTTON_STRIP::start_sequence( uint32_t sequence_length_ms, uint32_t current
   m_running                 = true;
   m_step_num                = NUM_SEGMENTS; // next update will move to step 0
   m_next_step_time_stamp_ms = current_time_ms;
+}
+
+void BUTTON_STRIP::record_sequence( uint32_t time_ms )
+{
+  m_mode                    = MODE::RECORD_SEQ;
+  m_current_seq_event       = 0;
+  m_seq_start_time_stamp    = time_ms;
+}
+
+void BUTTON_STRIP::stop_record_seqence( uint32_t time_ms )
+{
+  // record the final event
+  record_sequence_event( time_ms, -1 );    
 }
 
 void BUTTON_STRIP::stop_sequence()
