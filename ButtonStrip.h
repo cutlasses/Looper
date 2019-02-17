@@ -30,7 +30,7 @@ private:
   struct SEQUENCE_EVENT
   {
     uint32_t        m_time_stamp                = 0;
-    int16_t        m_segment                    = 0; // set to -1 for last event (end of loop)
+    int16_t         m_segment                   = 0;
   };
   
   const int         m_i2c_address; 
@@ -55,8 +55,9 @@ private:
 
   void              send_led_values(uint8_t led_values);
   bool              update_free_play( uint32_t time_ms, uint32_t& activated_segment );
+  bool              update_play_sequence( uint32_t time_ms, uint32_t& activated_segment );
   void              record_sequence_event( uint32_t time_ms, int32_t activated_segment );
-  void              stop_record_seqence( uint32_t time_ms );
+  void              start_sequence_playback( uint32_t time_ms );
   
 public:
 

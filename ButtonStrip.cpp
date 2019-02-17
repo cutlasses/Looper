@@ -81,6 +81,27 @@ bool BUTTON_STRIP::update_free_play( uint32_t time_ms, uint32_t& activated_segme
   return step_triggered;  
 }
 
+bool BUTTON_STRIP::update_play_sequence( uint32_t time_ms, uint32_t& activated_segment )
+{
+  bool step_triggered = false;
+  
+  const SEQUENCE_EVENT& current_event = m_sequence_events[m_current_seq_event];
+
+  if( time_ms - m_seq_start_time_stamp >= current_event.m_time_stamp )
+  {
+    activated_segment = current_event.m_segment;
+    step_triggered = true;
+    
+    if( ++m_current_seq_event == m_current_seq_num_events )
+    {
+      // loop the sequence
+      m_current_seq_event = 0;
+    }
+  }
+
+  return step_triggered;
+}
+
 void BUTTON_STRIP::record_sequence_event( uint32_t time_ms, int32_t activated_segment )
 {
   // TODO end the sequence (with final event) when it gets full
@@ -132,10 +153,16 @@ void BUTTON_STRIP::record_sequence( uint32_t time_ms )
   m_seq_start_time_stamp    = time_ms;
 }
 
-void BUTTON_STRIP::stop_record_seqence( uint32_t time_ms )
+void BUTTON_STRIP::start_sequence_playback( uint32_t time_ms )
 {
+  m_mode                    = MODE::PLAY_SEQ;
+  
   // record the final event
-  record_sequence_event( time_ms, -1 );    
+  ++m_current_seq_num_events;
+  record_sequence_event( time_ms, 0 );    
+
+  m_current_seq_event       = 0;
+  m_seq_start_time_stamp    = time_ms;
 }
 
 void BUTTON_STRIP::stop_sequence()
