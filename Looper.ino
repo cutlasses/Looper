@@ -188,14 +188,39 @@ void loop()
         audio_recorder.play();
 
         button_strip.lock_buttons( false );
-
-        // button strip sequence already playing
-        //button_strip.start_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
       }
 
       if( looper_interface.record_button().single_click() )
       {
         // sequence recording
+        switch( button_strip.mode() )
+        {
+          case BUTTON_STRIP::MODE::FREE_PLAY:
+          {
+            // start recording
+            button_strip.start_record_sequence( time_ms );
+            looper_interface.set_recording( true, time_ms );
+            break;
+          }
+          case BUTTON_STRIP::MODE::RECORD_SEQ:
+          {
+            // stop recording
+            button_strip.start_sequence_playback( time_ms );
+            looper_interface.set_recording( false, time_ms );
+            break;
+          }
+          case BUTTON_STRIP::MODE::PLAY_SEQ:
+          {
+            // nothing to do here?
+            break;
+          }
+        }
+      }
+      else if( looper_interface.record_button().down_time_ms() > STOP_LOOP_BUTTON_DOWN_TIME_MS )
+      {
+        looper_interface.set_recording( false, time_ms );
+
+        button_strip.stop_sequence();
       }
 
       in_loop_mode = false;
@@ -236,7 +261,7 @@ void loop()
             // stop recording and play loop
             audio_recorder.stop_record();
             looper_interface.set_recording( false, time_ms );
-            button_strip.start_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
+            button_strip.start_free_play_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
             
             break;
           }

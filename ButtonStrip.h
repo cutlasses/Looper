@@ -51,22 +51,27 @@ private:
   uint16_t          m_current_seq_event         = 0;
   uint16_t          m_current_seq_num_events    = 0;
   uint32_t          m_seq_start_time_stamp      = 0;
+  uint8_t           m_initial_seq_segment       = 0;
 
 
   void              send_led_values(uint8_t led_values);
+  bool              update_steps( uint32_t time_ms );
   bool              update_free_play( uint32_t time_ms, uint32_t& activated_segment );
   bool              update_play_sequence( uint32_t time_ms, uint32_t& activated_segment );
   void              record_sequence_event( uint32_t time_ms, int32_t activated_segment );
-  void              start_sequence_playback( uint32_t time_ms );
   
 public:
 
   BUTTON_STRIP( int i2c_address );
   
   bool              update( uint32_t time_ms, uint32_t& activated_segment );
-  void              start_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms );
-  void              record_sequence(uint32_t time_ms );
+  
+  void              start_free_play_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms );
+  void              start_record_sequence(uint32_t time_ms );
+  void              start_sequence_playback( uint32_t time_ms );
   void              stop_sequence();
+
+  MODE              mode() const;
 
   void              lock_buttons( bool lock );
 

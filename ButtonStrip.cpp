@@ -16,20 +16,27 @@ void BUTTON_STRIP::send_led_values(uint8_t led_values)
   Wire.endTransmission();  
 }
 
-bool BUTTON_STRIP::update_free_play( uint32_t time_ms, uint32_t& activated_segment )
-{
-  bool step_triggered = false;
-  bool update_leds = false;
-  if( time_ms > m_next_step_time_stamp_ms )
+ bool BUTTON_STRIP::update_steps( uint32_t time_ms )
+ {
+   if( time_ms > m_next_step_time_stamp_ms )
   {
     if( ++m_step_num >= NUM_SEGMENTS )
     {
       m_step_num = 0;
     }
 
-    update_leds = true;
     m_next_step_time_stamp_ms = time_ms + m_step_length_ms;
+
+    return true;
   }
+
+  return false;
+ }
+
+bool BUTTON_STRIP::update_free_play( uint32_t time_ms, uint32_t& activated_segment )
+{
+  bool step_triggered = false;
+  bool update_leds    = update_steps( time_ms );
   
   if( !m_buttons_locked )
   {
@@ -83,20 +90,34 @@ bool BUTTON_STRIP::update_free_play( uint32_t time_ms, uint32_t& activated_segme
 
 bool BUTTON_STRIP::update_play_sequence( uint32_t time_ms, uint32_t& activated_segment )
 {
+  bool update_leds    = update_steps( time_ms );
   bool step_triggered = false;
   
   const SEQUENCE_EVENT& current_event = m_sequence_events[m_current_seq_event];
 
   if( time_ms - m_seq_start_time_stamp >= current_event.m_time_stamp )
   {
-    activated_segment = current_event.m_segment;
-    step_triggered = true;
+    Serial.print("triggered event:");
+    Serial.println(current_event.m_segment);
+
+    m_step_num                = current_event.m_segment;
+    activated_segment         = current_event.m_segment;
+    step_triggered            = true;
+    update_leds               = true;
     
     if( ++m_current_seq_event == m_current_seq_num_events )
     {
       // loop the sequence
-      m_current_seq_event = 0;
+      m_current_seq_event     = 0;
+      m_seq_start_time_stamp  = time_ms;
     }
+  }
+
+  // write led values
+  if( update_leds )
+  {    
+    const uint8_t led_values = m_running ? (1 << m_step_num) : 0;
+    send_led_values( led_values );
   }
 
   return step_triggered;
@@ -104,8 +125,17 @@ bool BUTTON_STRIP::update_play_sequence( uint32_t time_ms, uint32_t& activated_s
 
 void BUTTON_STRIP::record_sequence_event( uint32_t time_ms, int32_t activated_segment )
 {
+  Serial.print("record_sequence_event:");
+  Serial.println(activated_segment);
+  
   // TODO end the sequence (with final event) when it gets full
   ASSERT_MSG( m_current_seq_num_events < MAX_SEQUENCE_EVENTS, "Max events exceeded" );
+  if( m_current_seq_num_events >= MAX_SEQUENCE_EVENTS )
+  {
+    // no space
+    return;
+  }
+  
   const uint32_t event_time = time_ms - m_seq_start_time_stamp;
   SEQUENCE_EVENT& event     = m_sequence_events[ m_current_seq_num_events++ ];
   event.m_time_stamp        = event_time;
@@ -131,14 +161,16 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
     }
     case MODE::PLAY_SEQ:
     {
+      step_triggered = update_play_sequence( time_ms, activated_segment );
+      
       break;
     }      
   }
   return step_triggered;
 }
 
-void BUTTON_STRIP::start_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms )
-{
+void BUTTON_STRIP::start_free_play_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms )
+{  
   m_step_length_ms          = sequence_length_ms / NUM_SEGMENTS;
     
   m_running                 = true;
@@ -146,30 +178,41 @@ void BUTTON_STRIP::start_sequence( uint32_t sequence_length_ms, uint32_t current
   m_next_step_time_stamp_ms = current_time_ms;
 }
 
-void BUTTON_STRIP::record_sequence( uint32_t time_ms )
+void BUTTON_STRIP::start_record_sequence( uint32_t time_ms )
 {
+  Serial.println("start_record_sequence");
+  
   m_mode                    = MODE::RECORD_SEQ;
   m_current_seq_event       = 0;
   m_seq_start_time_stamp    = time_ms;
+
+  m_initial_seq_segment     = m_step_num;
 }
 
 void BUTTON_STRIP::start_sequence_playback( uint32_t time_ms )
 {
+  Serial.println("start_sequence_playback");
+  
   m_mode                    = MODE::PLAY_SEQ;
   
   // record the final event
   ++m_current_seq_num_events;
-  record_sequence_event( time_ms, 0 );    
+  record_sequence_event( time_ms, m_initial_seq_segment );    
 
   m_current_seq_event       = 0;
-  m_seq_start_time_stamp    = time_ms;
+  m_seq_start_time_stamp    = time_ms; // TODO store time offset from beginning of current segement
 }
 
 void BUTTON_STRIP::stop_sequence()
 {
   m_running = false;
+  m_mode    = MODE::FREE_PLAY;
 }
 
+BUTTON_STRIP::MODE BUTTON_STRIP::mode() const
+{
+  return m_mode;
+}
 
 void BUTTON_STRIP::lock_buttons( bool lock )
 {
