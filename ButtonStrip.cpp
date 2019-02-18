@@ -104,6 +104,7 @@ bool BUTTON_STRIP::update_play_sequence( uint32_t time_ms, uint32_t& activated_s
     activated_segment         = current_event.m_segment;
     step_triggered            = true;
     update_leds               = true;
+    m_next_step_time_stamp_ms = time_ms + m_step_length_ms;
     
     if( ++m_current_seq_event == m_current_seq_num_events )
     {
