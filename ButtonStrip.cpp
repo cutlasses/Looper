@@ -172,6 +172,8 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
 
 void BUTTON_STRIP::start_free_play_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms )
 {  
+  m_mode                    = MODE::FREE_PLAY;
+  
   m_step_length_ms          = sequence_length_ms / NUM_SEGMENTS;
     
   m_running                 = true;

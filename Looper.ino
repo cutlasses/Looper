@@ -216,11 +216,14 @@ void loop()
           }
         }
       }
-      else if( looper_interface.record_button().down_time_ms() > STOP_LOOP_BUTTON_DOWN_TIME_MS )
+      else if( looper_interface.record_button().down_time_ms() > STOP_LOOP_BUTTON_DOWN_TIME_MS &&
+                button_strip.mode() != BUTTON_STRIP::MODE::FREE_PLAY )
       {
         looper_interface.set_recording( false, time_ms );
 
-        button_strip.stop_sequence();
+        audio_recorder.play();
+
+        button_strip.start_free_play_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
       }
 
       in_loop_mode = false;
