@@ -324,6 +324,8 @@ void loop()
   audio_recorder.update_main_loop(); 
 
   // set interface paramaters
+  audio_recorder.set_saturation( looper_interface.saturation() );
+  
   input_gain.gain( looper_interface.gain() );
 
   const float mix = looper_interface.mix();

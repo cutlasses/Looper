@@ -38,6 +38,8 @@ public:
 
   static const char*  mode_to_string( MODE mode );
 
+  void                set_saturation( float saturation );
+
   //// For AUDIO_RECORD_QUEUE
   void                release_block_func(audio_block_t* block);
 
@@ -60,6 +62,8 @@ private:
 
   bool                m_looping;
   bool                m_finished_playback;
+
+  float               m_soft_clip_coefficient;
 
   static constexpr const int PLAY_QUEUE_SIZE              = 64;
   static constexpr const int RECORD_QUEUE_SIZE            = 53; // matches the teensy audio library
@@ -85,6 +89,8 @@ private:
   void                stop_current_mode( bool reset_play_file );
 
   void                switch_play_record_buffers();
+
+  int16_t             soft_clip_sample( int16_t sample ) const;
 
   inline bool         is_recording()
   {

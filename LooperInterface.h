@@ -49,5 +49,6 @@ private:
     bool                      sample_to_play( int& sample_index );
 
     float                     gain() const;
+    float                     saturation() const;
     float                     mix() const;
 };

@@ -106,6 +106,12 @@ float LOOPER_INTERFACE::gain() const
   return m_dials[0].value();
 }
 
+float LOOPER_INTERFACE::saturation() const
+{
+  // saturation value for soft clipping
+  return m_dials[1].value();
+}
+
 float LOOPER_INTERFACE::mix() const
 {
   // bottom dial is mix, for consistency with my other modules

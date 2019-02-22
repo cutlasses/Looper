@@ -22,6 +22,7 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   m_jump_pending(false),
   m_looping(false),
   m_finished_playback(false),
+  m_soft_clip_coefficient( 0.0f ),
   m_sd_play_queue(*this, "PLAY_QUEUE" ),
   m_sd_record_queue(*this, "RECORD_QUEUE" )
 {
@@ -300,8 +301,8 @@ audio_block_t* SD_AUDIO_RECORDER::create_record_block()
     {
       for( int i = 0; i < AUDIO_BLOCK_SAMPLES; ++i )
       {
-        // TODO apply soft clipping?
-        in_block->data[i] += m_just_played_block->data[i];
+        const int32_t summed_sample = in_block->data[i] + m_just_played_block->data[i];
+        in_block->data[i] = soft_clip_sample( summed_sample );
         ASSERT_MSG( in_block->data[i] < std::numeric_limits<int16_t>::max() && in_block->data[i] > std::numeric_limits<int16_t>::min(), "CLIPPING" );
       }
     }
@@ -508,6 +509,12 @@ void SD_AUDIO_RECORDER::update_recording_sd()
     memcpy( buffer + 256, m_sd_record_queue.read_buffer(), 256);
     m_sd_record_queue.release_buffer();
 
+    // soft clip the buffer
+    for( int s = 0; s < 512; ++s )
+    {
+      buffer[s] = soft_clip_sample( buffer[s] );
+    }
+
     ADD_TIMED_SECTION( "Write time" );
     m_recorded_audio_file.write( buffer, 512 );
   }
@@ -578,6 +585,25 @@ void SD_AUDIO_RECORDER::switch_play_record_buffers()
 //  Serial.print( m_play_back_filename );
 //  Serial.print(" Record: " );
 //  Serial.println( m_record_filename );
+}
+
+int16_t SD_AUDIO_RECORDER::soft_clip_sample( int16_t sample ) const
+{
+  // scale input sample to the range [-1,1]
+  const float sample_f = static_cast<float>(sample) / std::numeric_limits<int16_t>::max();
+  const float clipped_sample = sample_f - ( m_soft_clip_coefficient * ( sample_f * sample_f * sample_f ) );
+
+  const int16_t output_sample = round_to_int( clipped_sample * std::numeric_limits<int16_t>::max() );
+
+  return output_sample;
+}
+
+void SD_AUDIO_RECORDER::set_saturation( float saturation )
+{
+  constexpr const float MIN_SATURATION = 0.0f;
+  constexpr const float MAX_SATURATION = 1.0f / 3.0f;
+
+  m_soft_clip_coefficient = lerp( MIN_SATURATION, MAX_SATURATION, saturation );
 }
 
 const char* SD_AUDIO_RECORDER::mode_to_string( MODE mode )
