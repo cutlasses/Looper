@@ -129,8 +129,6 @@ void setup()
   constexpr int mem_size = 512;
   AudioMemory( mem_size );
 
-  input_gain.gain(0.4f);
-
   analogReference(INTERNAL);
 
   set_adc1_to_3v3();
@@ -166,17 +164,8 @@ void setup()
   delay(500);
 }
 
-void loop()
+void update_looper_mode(uint64_t time_ms)
 {
-  uint64_t time_ms = millis();
-
-  if( looper_interface.update( io.adc, time_ms ) )
-  {
-    // mode changed
-    Serial.println("Stop() Mode Change" );
-    audio_recorder.stop();
-  }
-
   static bool in_loop_mode = looper_interface.mode() == LOOPER_INTERFACE::MODE::LOOPER;
 
   switch( looper_interface.mode() )
@@ -317,8 +306,25 @@ void loop()
       break;
     }
   }
+}
 
-  audio_recorder.update_main_loop();
+void loop()
+{
+  const uint64_t time_ms = millis();
+
+  if( looper_interface.update( io.adc, time_ms ) )
+  {
+    // mode changed
+    Serial.println("Stop() Mode Change" );
+    audio_recorder.stop();
+  }
+
+  update_looper_mode( time_ms );
+
+  audio_recorder.update_main_loop(); 
+
+  // set interface paramaters
+  input_gain.gain( looper_interface.gain() );
 
   const float mix = looper_interface.mix();
   mixer.gain( 0, 1.0f - mix );

@@ -100,10 +100,16 @@ bool LOOPER_INTERFACE::sample_to_play( int& sample_index )
   return false;
 }
 
- float LOOPER_INTERFACE::mix() const
- {
+float LOOPER_INTERFACE::gain() const
+{
+  // top dial control digital gain reduction
+  return m_dials[0].value();
+}
+
+float LOOPER_INTERFACE::mix() const
+{
   // bottom dial is mix, for consistency with my other modules
   return m_dials[NUM_DIALS-1].value();
- }
+}
 
 
