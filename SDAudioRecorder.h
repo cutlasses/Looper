@@ -14,7 +14,7 @@ public:
     STOP,
     RECORD_INITIAL,       // record the original loop
     RECORD_PLAY,          // duplicate the loop without overdubbing
-    RECORD_OVERDUB,  // overdub incoming audio onto the loop
+    RECORD_OVERDUB,       // overdub incoming audio onto the loop
   };
 
   SD_AUDIO_RECORDER();

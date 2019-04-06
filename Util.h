@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include <Arduino.h>
 #include "CompileSwitches.h"
 
@@ -182,3 +184,23 @@ public:
     return m_size;
   }
 };
+
+//// AUDIO ////
+
+namespace DSP_UTILS
+{
+
+  inline int16_t soft_clip_sample( int16_t sample, float clip_coefficient )
+  {
+    // scale input sample to the range [-1,1]
+    const float sample_f = static_cast<float>(sample) / std::numeric_limits<int16_t>::max();
+    const float clipped_sample = sample_f - ( clip_coefficient * ( sample_f * sample_f * sample_f ) );
+  
+    // scale back to [int16 min, int16 max]
+    const int16_t output_sample = round_to_int( clipped_sample * std::numeric_limits<int16_t>::max() );
+  
+    return output_sample;
+  }
+
+}
+// DSP_UTILS

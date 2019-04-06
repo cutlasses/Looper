@@ -1,4 +1,3 @@
-#include <limits>
 
 #include "Util.h"
 #include "SDAudioRecorder.h"
@@ -589,14 +588,7 @@ void SD_AUDIO_RECORDER::switch_play_record_buffers()
 
 int16_t SD_AUDIO_RECORDER::soft_clip_sample( int16_t sample ) const
 {
-  // scale input sample to the range [-1,1]
-  const float sample_f = static_cast<float>(sample) / std::numeric_limits<int16_t>::max();
-  const float clipped_sample = sample_f - ( m_soft_clip_coefficient * ( sample_f * sample_f * sample_f ) );
-
-  // scale back to [int16 min, int16 max]
-  const int16_t output_sample = round_to_int( clipped_sample * std::numeric_limits<int16_t>::max() );
-
-  return output_sample;
+  return DSP_UTILS::soft_clip_sample( sample, m_soft_clip_coefficient );
 }
 
 void SD_AUDIO_RECORDER::set_saturation( float saturation )
