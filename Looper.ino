@@ -8,7 +8,6 @@
 #include "ButtonStrip.h"
 #include "LooperInterface.h"
 #include "SDAudioRecorder.h"
-#include "SoftClip.h"
 
 constexpr int SDCARD_CS_PIN    = BUILTIN_SDCARD;
 constexpr int SDCARD_MOSI_PIN  = 11;
@@ -42,13 +41,10 @@ SD_AUDIO_RECORDER audio_recorder;
 
 AudioAmplifier    input_gain;
 AudioMixer4       mixer;
-SOFT_CLIP         soft_clip;
 
 AudioConnection   patch_cord_1( io.audio_input, 0, input_gain, 0 );
 AudioConnection   patch_cord_2( input_gain, 0, audio_recorder, 0 );
-AudioConnection   patch_cord_3a( io.audio_input, 0, soft_clip, 0 );
-AudioConnection   patch_cord_3( soft_clip, 0, mixer, 0 );
-//AudioConnection   patch_cord_3( io.audio_input, 0, mixer, 0 );
+AudioConnection   patch_cord_3( io.audio_input, 0, mixer, 0 );
 AudioConnection   patch_cord_4( audio_recorder, 0, mixer, 1 );
 AudioConnection   patch_cord_5( mixer, 0, io.audio_output, 0 );
 
@@ -126,9 +122,10 @@ void fill_sample_list( File dir )
 
 void setup()
 {
+#ifdef DEBUG_OUTPUT
   Serial.begin(9600);
-
   serial_port_initialised = true;
+#endif
 
   constexpr int mem_size = 512;
   AudioMemory( mem_size );
@@ -328,7 +325,6 @@ void loop()
   audio_recorder.update_main_loop(); 
 
   // set interface paramaters
-  soft_clip.set_saturation( looper_interface.saturation() );
   audio_recorder.set_saturation( looper_interface.saturation() );
   
   input_gain.gain( looper_interface.gain() );

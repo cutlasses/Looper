@@ -190,11 +190,28 @@ public:
 namespace DSP_UTILS
 {
 
-  inline int16_t soft_clip_sample( int16_t sample, float clip_coefficient )
+  inline int16_t soft_clip_sample( int16_t sample, float clip_coefficient, bool debug = false )
   {
     // scale input sample to the range [-1,1]
-    const float sample_f = static_cast<float>(sample) / std::numeric_limits<int16_t>::max();
+    const float sample_f = static_cast<float>(sample) / static_cast<float>(std::numeric_limits<int16_t>::max());
+    ASSERT_MSG( sample_f >= -1.01f && sample_f <= 1.01f, "Soft clip - sample scale error" );
     const float clipped_sample = sample_f - ( clip_coefficient * ( sample_f * sample_f * sample_f ) );
+
+    /*
+    if( debug || sample_f < -1.01f || sample_f > 1.01f )
+    {
+      Serial.print("soft_clip ");
+      if( !debug )
+      {
+        Serial.print( "clip error ");
+      }
+      Serial.print(sample_f);
+      Serial.print(" ");
+      Serial.print(clipped_sample);
+      Serial.print(" ");
+      Serial.println(clip_coefficient);
+    }
+    */
   
     // scale back to [int16 min, int16 max]
     const int16_t output_sample = round_to_int( clipped_sample * std::numeric_limits<int16_t>::max() );

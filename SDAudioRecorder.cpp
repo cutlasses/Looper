@@ -300,8 +300,9 @@ audio_block_t* SD_AUDIO_RECORDER::create_record_block()
     {
       for( int i = 0; i < AUDIO_BLOCK_SAMPLES; ++i )
       {
-        const int32_t summed_sample = soft_clip_sample( in_block->data[i] ) + m_just_played_block->data[i];
-        in_block->data[i] = soft_clip_sample( summed_sample );
+        const int32_t summed_sample = in_block->data[i] + m_just_played_block->data[i]; // need to add them in 32 bits to avoid wrap-around
+        const int16_t sample16      = clamp<int32_t>( summed_sample, std::numeric_limits<int16_t>::lowest(), std::numeric_limits<int16_t>::max() );
+        in_block->data[i]           = soft_clip_sample( sample16 );
         ASSERT_MSG( in_block->data[i] < std::numeric_limits<int16_t>::max() && in_block->data[i] > std::numeric_limits<int16_t>::min(), "CLIPPING" );
       }
     }
