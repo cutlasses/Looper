@@ -40,13 +40,15 @@ IO io;
 SD_AUDIO_RECORDER audio_recorder;
 
 AudioAmplifier    input_gain;
-AudioMixer4       mixer;
+AudioMixer4       looper_mixer;
+AudioEffectDelay  delay_line;
+AudioMixer4       delay_mixer;
 
 AudioConnection   patch_cord_1( io.audio_input, 0, input_gain, 0 );
 AudioConnection   patch_cord_2( input_gain, 0, audio_recorder, 0 );
-AudioConnection   patch_cord_3( io.audio_input, 0, mixer, 0 );
-AudioConnection   patch_cord_4( audio_recorder, 0, mixer, 1 );
-AudioConnection   patch_cord_5( mixer, 0, io.audio_output, 0 );
+AudioConnection   patch_cord_3( io.audio_input, 0, looper_mixer, 0 );
+AudioConnection   patch_cord_4( audio_recorder, 0, looper_mixer, 1 );
+AudioConnection   patch_cord_5( looper_mixer, 0, io.audio_output, 0 );
 
 BUTTON_STRIP      button_strip( I2C_ADDRESS );
 
@@ -176,6 +178,8 @@ void update_looper_mode(uint64_t time_ms)
       if( in_loop_mode )
       {
         audio_recorder.play();
+
+        button_strip.start_free_play_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
 
         button_strip.lock_buttons( false );
       }
@@ -329,9 +333,9 @@ void loop()
   
   input_gain.gain( looper_interface.gain() );
 
-  const float mix = looper_interface.mix();
-  mixer.gain( 0, 1.0f - mix );
-  mixer.gain( 1, mix );
+  const float looper_mix = looper_interface.looper_mix();
+  looper_mixer.gain( 0, 1.0f - looper_mix );
+  looper_mixer.gain( 1, looper_mix );
 
   uint32_t segment;
   if( button_strip.update( time_ms, segment ) )

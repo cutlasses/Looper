@@ -143,6 +143,12 @@ void BUTTON_STRIP::record_sequence_event( uint32_t time_ms, int32_t activated_se
   event.m_segment           = activated_segment;
 }
 
+void BUTTON_STRIP::clear_sequence()
+{
+  m_seq_num_events          = 0;
+  m_current_seq_event       = 0;  
+}
+
 bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
 {
   bool step_triggered = false;
@@ -173,6 +179,8 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
 void BUTTON_STRIP::start_free_play_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms )
 {  
   m_mode                    = MODE::FREE_PLAY;
+
+  clear_sequence();
   
   m_step_length_ms          = sequence_length_ms / NUM_SEGMENTS;
     
@@ -184,10 +192,10 @@ void BUTTON_STRIP::start_free_play_sequence( uint32_t sequence_length_ms, uint32
 void BUTTON_STRIP::start_record_sequence( uint32_t time_ms )
 {
   Serial.println("start_record_sequence");
+
+  clear_sequence();
   
   m_mode                    = MODE::RECORD_SEQ;
-  m_seq_num_events          = 0;
-  m_current_seq_event       = 0;
   m_seq_start_time_stamp    = time_ms;
 
   m_initial_seq_segment     = m_step_num;

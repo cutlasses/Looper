@@ -6,7 +6,7 @@ constexpr const int SATURATION_POT      = 1;
 constexpr const int DELAY_MIX_POT       = 2;
 constexpr const int DELAY_TIME_POT      = 3;
 constexpr const int DELAY_FEEDBACK_POT  = 4;
-constexpr const int MIX_POT             = 5;
+constexpr const int LOOPER_MIX_POT      = 5;
 
 LOOPER_INTERFACE::LOOPER_INTERFACE() :
   m_dials( { DIAL( A20 ), DIAL( A19 ), DIAL( A18 ), DIAL( A17 ), DIAL( A16 ), DIAL( A13 ) } ),
@@ -135,10 +135,10 @@ float LOOPER_INTERFACE::delay_feedback() const
   return m_dials[DELAY_FEEDBACK_POT].value();  
 }
 
-float LOOPER_INTERFACE::mix() const
+float LOOPER_INTERFACE::looper_mix() const
 {
   // bottom dial is mix, for consistency with my other modules
-  return m_dials[MIX_POT].value();
+  return m_dials[LOOPER_MIX_POT].value();
 }
 
 

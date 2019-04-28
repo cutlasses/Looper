@@ -53,5 +53,5 @@ private:
     float                     delay_mix() const;
     float                     delay_time() const;
     float                     delay_feedback() const;
-    float                     mix() const;
+    float                     looper_mix() const;
 };
