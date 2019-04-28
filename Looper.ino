@@ -177,6 +177,7 @@ void update_looper_mode(uint64_t time_ms)
     {
       if( in_loop_mode )
       {
+        // switching from loop record to loop playback
         audio_recorder.play();
 
         button_strip.start_free_play_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
@@ -230,6 +231,7 @@ void update_looper_mode(uint64_t time_ms)
       
       if( !in_loop_mode )
       {
+        // switching from loop playback to loop record
         // TODO - do we want to stop here?
         audio_recorder.stop();
         button_strip.stop_sequence();
