@@ -12,7 +12,7 @@ class DIAL_BASE
 
 protected:
 
-  bool         set_current_value( int new_value );
+  bool         set_current_value( int new_value, bool filter );
 
 public:
 
@@ -32,7 +32,7 @@ public:
 
   DIAL( int data_pin, bool invert = false );
 
-  bool          update( ADC& adc );
+  bool          update( ADC& adc, bool filter );
 };
 
 //////////////////////////////////////

@@ -1,6 +1,13 @@
 #include "LooperInterface.h"
 #include "Util.h"
 
+constexpr const int GAIN_POT            = 0;
+constexpr const int SATURATION_POT      = 1;
+constexpr const int DELAY_MIX_POT       = 2;
+constexpr const int DELAY_TIME_POT      = 3;
+constexpr const int DELAY_FEEDBACK_POT  = 4;
+constexpr const int MIX_POT             = 5;
+
 LOOPER_INTERFACE::LOOPER_INTERFACE() :
   m_dials( { DIAL( A20 ), DIAL( A19 ), DIAL( A18 ), DIAL( A17 ), DIAL( A16 ), DIAL( A13 ) } ),
   m_mode_button( MODE_BUTTON_PIN, false ),
@@ -32,7 +39,8 @@ bool LOOPER_INTERFACE::update( ADC& adc, uint32_t time_in_ms )
   // read each pot
   for( int d = 0; d < NUM_DIALS; ++d )
   {
-    m_dials[d].update( adc );
+    const bool filter = d == DELAY_TIME_POT;
+    m_dials[d].update( adc, filter );
   }
   
   m_mode_button.update( time_in_ms );
@@ -103,19 +111,34 @@ bool LOOPER_INTERFACE::sample_to_play( int& sample_index )
 float LOOPER_INTERFACE::gain() const
 {
   // top dial control digital gain reduction
-  return m_dials[0].value();
+  return m_dials[GAIN_POT].value();
 }
 
 float LOOPER_INTERFACE::saturation() const
 {
   // saturation value for soft clipping
-  return m_dials[1].value();
+  return m_dials[SATURATION_POT].value();
+}
+
+float LOOPER_INTERFACE::delay_mix() const
+{
+  return m_dials[DELAY_MIX_POT].value();  
+}
+
+float LOOPER_INTERFACE::delay_time() const
+{
+  return m_dials[DELAY_TIME_POT].value();  
+}
+
+float LOOPER_INTERFACE::delay_feedback() const
+{
+  return m_dials[DELAY_FEEDBACK_POT].value();  
 }
 
 float LOOPER_INTERFACE::mix() const
 {
   // bottom dial is mix, for consistency with my other modules
-  return m_dials[NUM_DIALS-1].value();
+  return m_dials[MIX_POT].value();
 }
 
 

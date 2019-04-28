@@ -18,12 +18,25 @@ DIAL_BASE::~DIAL_BASE()
   
 }
 
-bool DIAL_BASE::set_current_value( int new_value )
+bool DIAL_BASE::set_current_value( int new_value, bool filter )
 {
-  if( new_value != m_current_value )
+  if( filter )
   {
-    m_current_value = new_value;
-    return true;
+    constexpr int THRESHOLD = trunc_to_int( 63336.0f / 256.0f );
+    //if( new_value != m_current_value )
+    if( fabs( new_value - m_current_value ) > THRESHOLD )
+    {
+      m_current_value = new_value;
+      return true;
+    }
+  }
+  else
+  {  
+    if( new_value != m_current_value )
+    {
+      m_current_value = new_value;
+      return true;
+    }
   }
 
   return false; 
@@ -50,11 +63,11 @@ DIAL::DIAL( int data_pin, bool invert ) :
 
 }
 
-bool DIAL::update( ADC& adc )
+bool DIAL::update( ADC& adc, bool filter )
 {
   const int new_value = adc.analogRead( m_data_pin, ADC_1 );
 
-  return set_current_value( new_value );
+  return set_current_value( new_value, filter );
 }
 
 //////////////////////////////////////
@@ -73,7 +86,7 @@ bool I2C_DIAL::update()
 
  int new_value = b1 | ( b2 << 8 );
 
-  return set_current_value( new_value );
+  return set_current_value( new_value, false );
 }
 
 //////////////////////////////////////
