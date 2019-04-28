@@ -106,7 +106,7 @@ bool BUTTON_STRIP::update_play_sequence( uint32_t time_ms, uint32_t& activated_s
     update_leds               = true;
     m_next_step_time_stamp_ms = time_ms + m_step_length_ms;
     
-    if( ++m_current_seq_event == m_current_seq_num_events )
+    if( ++m_current_seq_event == m_seq_num_events )
     {
       // loop the sequence
       m_current_seq_event     = 0;
@@ -130,15 +130,15 @@ void BUTTON_STRIP::record_sequence_event( uint32_t time_ms, int32_t activated_se
   Serial.println(activated_segment);
   
   // TODO end the sequence (with final event) when it gets full
-  ASSERT_MSG( m_current_seq_num_events < MAX_SEQUENCE_EVENTS, "Max events exceeded" );
-  if( m_current_seq_num_events >= MAX_SEQUENCE_EVENTS )
+  ASSERT_MSG( m_seq_num_events < MAX_SEQUENCE_EVENTS, "Max events exceeded" );
+  if( m_seq_num_events >= MAX_SEQUENCE_EVENTS )
   {
     // no space
     return;
   }
   
   const uint32_t event_time = time_ms - m_seq_start_time_stamp;
-  SEQUENCE_EVENT& event     = m_sequence_events[ m_current_seq_num_events++ ];
+  SEQUENCE_EVENT& event     = m_sequence_events[ m_seq_num_events++ ];
   event.m_time_stamp        = event_time;
   event.m_segment           = activated_segment;
 }
@@ -186,6 +186,7 @@ void BUTTON_STRIP::start_record_sequence( uint32_t time_ms )
   Serial.println("start_record_sequence");
   
   m_mode                    = MODE::RECORD_SEQ;
+  m_seq_num_events          = 0;
   m_current_seq_event       = 0;
   m_seq_start_time_stamp    = time_ms;
 
@@ -199,7 +200,7 @@ void BUTTON_STRIP::start_sequence_playback( uint32_t time_ms )
   m_mode                    = MODE::PLAY_SEQ;
   
   // record the final event
-  ++m_current_seq_num_events;
+  ++m_seq_num_events;
   record_sequence_event( time_ms, m_initial_seq_segment );    
 
   m_current_seq_event       = 0;

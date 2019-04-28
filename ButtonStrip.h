@@ -49,7 +49,7 @@ private:
 
   SEQUENCE_EVENT    m_sequence_events[MAX_SEQUENCE_EVENTS];
   uint16_t          m_current_seq_event         = 0;
-  uint16_t          m_current_seq_num_events    = 0;
+  uint16_t          m_seq_num_events            = 0;
   uint32_t          m_seq_start_time_stamp      = 0;
   uint8_t           m_initial_seq_segment       = 0;
 
