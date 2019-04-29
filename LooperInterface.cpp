@@ -51,8 +51,6 @@ bool LOOPER_INTERFACE::update( ADC& adc, uint32_t time_in_ms )
   {
     m_mode = MODE( ( static_cast<int>(m_mode) + 1 ) % static_cast<int>(MODE::NUM_MODES) );
     mode_changed = true;
-    Serial.print("Click mode:");
-    Serial.println(static_cast<int>(m_mode));
   }
 
   for( int l = 0; l < NUM_LEDS; ++l )

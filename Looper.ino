@@ -235,15 +235,13 @@ void update_looper_mode(uint64_t time_ms)
         // TODO - do we want to stop here?
         audio_recorder.stop();
         button_strip.stop_sequence();
+        looper_interface.set_recording( false, time_ms );
       }
       
       in_loop_mode = true;
       
       if( looper_interface.record_button().single_click() )
       {
-        Serial.print("CLICK ");
-        Serial.println( SD_AUDIO_RECORDER::mode_to_string( audio_recorder.mode() ) );
-
         // TODO consider not exposing mode - only controls        
         switch( audio_recorder.mode() )
         {
@@ -292,13 +290,9 @@ void update_looper_mode(uint64_t time_ms)
             break;
           }
         }
-
-        Serial.print("Post click: ");
-        Serial.println( SD_AUDIO_RECORDER::mode_to_string( audio_recorder.mode() ) );
       }
       else if( looper_interface.record_button().down_time_ms() > STOP_LOOP_BUTTON_DOWN_TIME_MS )
       {
-        Serial.println("Hold Stop");
         audio_recorder.stop();
 
         looper_interface.set_recording( false, time_ms );
@@ -319,12 +313,7 @@ void loop()
 {
   const uint64_t time_ms = millis();
 
-  if( looper_interface.update( io.adc, time_ms ) )
-  {
-    // mode changed
-    Serial.println("Stop() Mode Change" );
-    audio_recorder.stop();
-  }
+  looper_interface.update( io.adc, time_ms );
 
   update_looper_mode( time_ms );
 

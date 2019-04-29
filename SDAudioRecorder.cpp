@@ -81,9 +81,7 @@ void SD_AUDIO_RECORDER::update_main_loop()
       if( m_finished_playback )
       {        
         if( m_looping )
-        {
-          Serial.println("Play - loop");
-    
+        {    
           start_playing_sd();
           m_mode = MODE::PLAY;
         
@@ -139,21 +137,17 @@ SD_AUDIO_RECORDER::MODE SD_AUDIO_RECORDER::mode() const
   
 void SD_AUDIO_RECORDER::play()
 {
-  Serial.println("SD_AUDIO_RECORDER::play()");
-
   AudioNoInterrupts();
+
+  Serial.println("SD_AUDIO_RECORDER::play()");
 
   if( m_mode == MODE::RECORD_PLAY || m_mode == MODE::RECORD_OVERDUB )
   {
-    // continue playing the current file
-    stop_recording_sd( false );
-    
+    stop_recording_sd( false );    
     m_mode = MODE::PLAY;
   }
-  else
-  {
-    play_file( m_play_back_filename, true );
-  }
+
+  play_file( m_play_back_filename, true );
 
   AudioInterrupts();
 }
@@ -341,7 +335,7 @@ void SD_AUDIO_RECORDER::release_block_func(audio_block_t* block)
 
 bool SD_AUDIO_RECORDER::start_playing_sd()
 {
-  Serial.print("SD_AUDIO_RECORDER::start_playing ");
+  Serial.print("SD_AUDIO_RECORDER::start_playing_sd() ");
   Serial.println( m_play_back_filename );
   
   stop_playing_sd();
@@ -365,10 +359,10 @@ bool SD_AUDIO_RECORDER::start_playing_sd()
   }
 
   Serial.print("Play File loaded ");
-  Serial.println(m_play_back_filename);
+  Serial.print(m_play_back_filename);
   m_play_back_file_size = m_play_back_audio_file.size();
   m_play_back_file_offset = 0;
-  Serial.print("File open - file size: ");
+  Serial.print(" file size: ");
   Serial.println(m_play_back_file_size);
 
   // prime the first read block in the read queue
@@ -454,7 +448,7 @@ void SD_AUDIO_RECORDER::update_playing_interrupt()
 
 void SD_AUDIO_RECORDER::stop_playing_sd()
 {
-  Serial.println("SD_AUDIO_RECORDER::stop_playing");
+  Serial.println("SD_AUDIO_RECORDER::stop_playing_sd");
 
   __disable_irq();
   if( m_mode == MODE::PLAY || m_mode == MODE::RECORD_PLAY || m_mode == MODE::RECORD_OVERDUB )
@@ -471,7 +465,7 @@ void SD_AUDIO_RECORDER::stop_playing_sd()
 
 void SD_AUDIO_RECORDER::start_recording_sd()
 {  
-  Serial.print("SD_AUDIO_RECORDER::start_recording ");
+  Serial.print("SD_AUDIO_RECORDER::start_recording_sd() ");
   Serial.println(m_record_filename);
   if( SD.exists( m_record_filename ) )
   {
@@ -484,7 +478,6 @@ void SD_AUDIO_RECORDER::start_recording_sd()
   if( m_recorded_audio_file )
   {
     m_sd_record_queue.start();
-    Serial.print("Start recording: ");
     Serial.println( m_record_filename );
   }
   else
@@ -522,7 +515,7 @@ void SD_AUDIO_RECORDER::update_recording_sd()
 
 void SD_AUDIO_RECORDER::stop_recording_sd( bool write_remaining_blocks )
 {
-  Serial.println("SD_AUDIO_RECORDER::stop_recording");
+  Serial.println("SD_AUDIO_RECORDER::stop_recording_sd()");
   m_sd_record_queue.stop();
 
   if( is_recording() )
@@ -537,6 +530,10 @@ void SD_AUDIO_RECORDER::stop_recording_sd( bool write_remaining_blocks )
         m_recorded_audio_file.write( reinterpret_cast<byte*>(m_sd_record_queue.read_buffer()), 256 );
         m_sd_record_queue.release_buffer();
       }
+    }
+    else
+    {
+      m_sd_record_queue.clear();
     }
 
     m_recorded_audio_file.close();
@@ -581,10 +578,10 @@ void SD_AUDIO_RECORDER::switch_play_record_buffers()
   // toggle record/play filenames
   swap( m_play_back_filename, m_record_filename );
 
-//  Serial.print( "switch_play_record_buffers() Play: ");
-//  Serial.print( m_play_back_filename );
-//  Serial.print(" Record: " );
-//  Serial.println( m_record_filename );
+  //Serial.print( "switch_play_record_buffers() Play: ");
+  //Serial.print( m_play_back_filename );
+  //Serial.print(" Record: " );
+  //Serial.println( m_record_filename );
 }
 
 int16_t SD_AUDIO_RECORDER::soft_clip_sample( int16_t sample ) const
@@ -636,8 +633,8 @@ uint32_t SD_AUDIO_RECORDER::play_back_file_time_ms() const
   const uint64_t num_samples = m_play_back_file_size / 2;
   const uint64_t time_in_ms = ( num_samples * 1000 ) / AUDIO_SAMPLE_RATE;
 
-  Serial.print("Play back time in seconds:");
-  Serial.println(time_in_ms / 1000.0f);
+  //Serial.print("Play back time in seconds:");
+  //Serial.println(time_in_ms / 1000.0f);
 
   return time_in_ms;
 }
