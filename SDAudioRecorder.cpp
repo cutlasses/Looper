@@ -11,6 +11,7 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   AudioStream( 1, m_input_queue_array ),
   m_just_played_block( nullptr ),
   m_mode( MODE::STOP ),
+  m_pending_mode( MODE::NONE ),
   m_play_back_filename( RECORDING_FILENAME1 ),
   m_record_filename( RECORDING_FILENAME1 ),
   m_recorded_audio_file(),
@@ -76,16 +77,37 @@ void SD_AUDIO_RECORDER::update_main_loop()
         }
       }
 
-      m_finished_playback = update_playing_sd();
+      const bool file_end = update_playing_sd();
+      m_finished_playback = file_end && m_sd_play_queue.empty();
 
       if( m_finished_playback )
-      {        
+      {       
+        Serial.println("PLAY END start"); 
         if( m_looping )
         {    
-          start_playing_sd();
-          m_mode = MODE::PLAY;
+          AudioNoInterrupts();
+          
+          if( m_pending_mode != MODE::NONE )
+          {
+            ASSERT_MSG( m_pending_mode == MODE:RECORD_PLAY, "Invalid pending mode" );
+
+            start_playing_sd();
+            start_recording_sd();
+
+            m_mode          = MODE::RECORD_PLAY;
+            m_pending_mode  = MODE::NONE;
+          }
+          else
+          {
+            start_playing_sd();
+            m_mode = MODE::PLAY;
+          }
+
+          Serial.println("PLAY END end"); 
         
           m_finished_playback = false;
+          
+          AudioInterrupts();
         }
         else
         {
@@ -103,7 +125,8 @@ void SD_AUDIO_RECORDER::update_main_loop()
     case MODE::RECORD_PLAY:
     case MODE::RECORD_OVERDUB:
     {
-      m_finished_playback = update_playing_sd();
+      const bool file_end = update_playing_sd();
+      m_finished_playback = file_end && m_sd_play_queue.empty();
       
       update_recording_sd();
       
@@ -113,9 +136,23 @@ void SD_AUDIO_RECORDER::update_main_loop()
         switch_play_record_buffers();
 
         AudioNoInterrupts();
-        stop_recording_sd();
-        start_playing_sd();
-        start_recording_sd();
+
+        if( m_pending_mode != MODE::NONE )
+        {
+          ASSERT_MSG( m_pending_mode == MODE::PLAY, "Invalid pending mode" );
+
+          stop_recording_sd();
+          start_playing_sd();
+
+          m_mode          = MODE::PLAY;
+          m_pending_mode  = MODE::NONE;
+        }
+        else
+        {
+          stop_recording_sd();
+          start_playing_sd();
+          start_recording_sd();
+        }
 
         m_finished_playback = false;
         AudioInterrupts();
@@ -143,11 +180,13 @@ void SD_AUDIO_RECORDER::play()
 
   if( m_mode == MODE::RECORD_PLAY || m_mode == MODE::RECORD_OVERDUB )
   {
-    stop_recording_sd( false );    
-    m_mode = MODE::PLAY;
+    m_pending_mode  = MODE::PLAY;
+    m_looping       = true;
   }
-
-  play_file( m_play_back_filename, true );
+  else
+  {
+    play_file( m_play_back_filename, true );
+  }
 
   AudioInterrupts();
 }
@@ -194,6 +233,12 @@ void SD_AUDIO_RECORDER::start_record()
     
   switch( m_mode )
   {
+    case MODE::PLAY:
+    {
+      m_pending_mode       = MODE::RECORD_PLAY;
+      
+      break;
+    }
     case MODE::STOP:
     {
       m_play_back_filename  = RECORDING_FILENAME1;
@@ -255,6 +300,11 @@ void SD_AUDIO_RECORDER::stop_record()
   }
 
   AudioInterrupts();
+}
+
+bool SD_AUDIO_RECORDER::mode_pending() const
+{
+  return m_pending_mode != MODE::NONE;
 }
 
 void SD_AUDIO_RECORDER::set_read_position( float t )
@@ -559,6 +609,16 @@ void SD_AUDIO_RECORDER::stop_current_mode( bool reset_play_file )
     {
       stop_playing_sd();
       stop_recording_sd();
+
+      m_sd_play_queue.clear();
+      m_sd_record_queue.clear();
+
+      if( m_just_played_block != nullptr )
+      {
+        release( m_just_played_block );
+        m_just_played_block = nullptr;
+      }
+      
       break;
     }
     default:

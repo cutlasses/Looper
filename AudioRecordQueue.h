@@ -56,6 +56,11 @@ public:
     return QUEUE_SIZE + m_head - m_tail;    
   }
 
+  int empty() const
+  {
+    return size() == 0;
+  }
+
   int remaining() const
   {
     return QUEUE_SIZE - size() - 1; // can't use final block (when head == tail it removes block)

@@ -9,8 +9,8 @@ public:
 
   enum class MODE
   {
-    SD_PLAYBACK,
-    LOOPER,
+    LOOP_PLAY,
+    LOOP_RECORD,
     NUM_MODES,
   };
 
@@ -35,6 +35,7 @@ private:
     int                       m_current_play_back_sample;
     int                       m_num_samples;
     MODE                      m_mode;
+    bool                      m_mode_pending;
 
   public:
 
@@ -43,6 +44,7 @@ private:
 
     bool                      update( ADC& adc, uint32_t time_in_ms );
     void                      set_recording( bool recording, uint32_t time_in_ms );
+    void                      set_mode_pending( bool pending, uint32_t time_in_ms );
 
     MODE                      mode() const;
     const BUTTON&             record_button() const;

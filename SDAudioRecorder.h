@@ -15,6 +15,7 @@ public:
     RECORD_INITIAL,       // record the original loop
     RECORD_PLAY,          // duplicate the loop without overdubbing
     RECORD_OVERDUB,       // overdub incoming audio onto the loop
+    NONE,                 // no mode (used by pending mode)
   };
 
   SD_AUDIO_RECORDER();
@@ -31,6 +32,8 @@ public:
   void                stop();
   void                start_record();
   void                stop_record();
+
+  bool                mode_pending() const;
 
   void                set_read_position( float t );
   
@@ -49,6 +52,7 @@ private:
   audio_block_t*      m_just_played_block;   // block which was just played from the SD file
 
   MODE                m_mode;
+  MODE                m_pending_mode;         // used to switch modes at the loop point
   const char*         m_play_back_filename;
   const char*         m_record_filename;
 

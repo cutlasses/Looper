@@ -169,19 +169,30 @@ void setup()
 
 void update_looper_mode(uint64_t time_ms)
 {
-  static bool in_loop_mode = looper_interface.mode() == LOOPER_INTERFACE::MODE::LOOPER;
+  static bool in_record_mode = looper_interface.mode() == LOOPER_INTERFACE::MODE::LOOP_RECORD;
+  static bool mode_change_pending = false;
 
   switch( looper_interface.mode() )
   {
-    case LOOPER_INTERFACE::MODE::SD_PLAYBACK:
+    case LOOPER_INTERFACE::MODE::LOOP_PLAY:
     {
-      if( in_loop_mode )
+      if( in_record_mode )
       {
         // switching from loop record to loop playback
         audio_recorder.play();
+        looper_interface.set_mode_pending( true, time_ms );
 
+        mode_change_pending = true;
+      }
+      in_record_mode = false;
+
+      // apply once mode has changed
+      if( mode_change_pending && !audio_recorder.mode_pending() )
+      {
+        mode_change_pending = false;
+
+        looper_interface.set_mode_pending( false, time_ms );
         button_strip.start_free_play_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
-
         button_strip.lock_buttons( false );
       }
 
@@ -221,24 +232,31 @@ void update_looper_mode(uint64_t time_ms)
         button_strip.start_free_play_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
       }
 
-      in_loop_mode = false;
-
       break;
     }
-    case LOOPER_INTERFACE::MODE::LOOPER:
+    case LOOPER_INTERFACE::MODE::LOOP_RECORD:
     {
       button_strip.lock_buttons( true );
       
-      if( !in_loop_mode )
+      if( !in_record_mode )
       {
         // switching from loop playback to loop record
-        // TODO - do we want to stop here?
-        audio_recorder.stop();
-        button_strip.stop_sequence();
-        looper_interface.set_recording( false, time_ms );
+        audio_recorder.start_record();
+
+        looper_interface.set_mode_pending( true, time_ms );
+
+        mode_change_pending = true;
       }
-      
-      in_loop_mode = true;
+      in_record_mode = true;
+
+      // apply once mode has changed
+      if( mode_change_pending && !audio_recorder.mode_pending() )
+      {
+        mode_change_pending = false;
+
+        looper_interface.set_mode_pending( false, time_ms );
+        button_strip.start_free_play_sequence( audio_recorder.play_back_file_time_ms(), time_ms );
+      }
       
       if( looper_interface.record_button().single_click() )
       {
@@ -318,6 +336,8 @@ void loop()
   update_looper_mode( time_ms );
 
   audio_recorder.update_main_loop(); 
+
+  // TODO reset button strip each time loop restarts?? (return state in update_main_loop)
 
   // set interface paramaters
   audio_recorder.set_saturation( looper_interface.saturation() );

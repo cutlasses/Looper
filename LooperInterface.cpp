@@ -15,7 +15,8 @@ LOOPER_INTERFACE::LOOPER_INTERFACE() :
   m_leds( { LED( LED_1_PIN, false ), LED( LED_2_PIN, false ), LED( LED_3_PIN, false ) } ),
   m_current_play_back_sample(-1),
   m_num_samples( 0 ),
-  m_mode( MODE::LOOPER )
+  m_mode( MODE::LOOP_RECORD ),
+  m_mode_pending( false )
 {
 
 }
@@ -58,7 +59,17 @@ bool LOOPER_INTERFACE::update( ADC& adc, uint32_t time_in_ms )
     LED& led = m_leds[l];
     if( l < static_cast<int>(MODE::NUM_MODES) )
     {
-      led.set_active( l == static_cast<int>(m_mode) );
+      if( l == static_cast<int>(m_mode) )
+      {
+        if( !m_mode_pending ) // if mode pending, leave flashing
+        {
+          led.set_active( true );
+        }
+      }
+      else
+      {
+        led.set_active( false );
+      }
     }
     
     led.update( time_in_ms );
@@ -79,6 +90,23 @@ void LOOPER_INTERFACE::set_recording( bool recording, uint32_t time_in_ms )
   {
     recording_led.flash_off();
   }
+}
+
+void LOOPER_INTERFACE::set_mode_pending( bool pending, uint32_t time_in_ms )
+{
+  LED& mode_led = m_leds[ static_cast<int>(m_mode) ];
+  if( pending )
+  {
+    constexpr const int MODE_FLASH_TIME(250);
+    mode_led.flash_on( time_in_ms, MODE_FLASH_TIME );
+  }
+  else
+  {
+    mode_led.flash_off();
+    mode_led.set_active(true);
+  }
+
+  m_mode_pending = pending;
 }
 
 LOOPER_INTERFACE::MODE LOOPER_INTERFACE::mode() const
