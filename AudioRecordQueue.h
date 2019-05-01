@@ -139,7 +139,7 @@ public:
   {   
     if( block == nullptr )
     {
-      Serial.println("null block in record queue");
+      Serial.println("null block in queue");
       return;
     }
   

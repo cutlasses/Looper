@@ -180,6 +180,8 @@ void update_looper_mode(uint64_t time_ms)
       {
         // switching from loop record to loop playback
         audio_recorder.play();
+
+        looper_interface.set_recording( false, time_ms ); // may have been recording overdub
         looper_interface.set_mode_pending( true, time_ms );
 
         mode_change_pending = true;
@@ -241,8 +243,14 @@ void update_looper_mode(uint64_t time_ms)
       if( !in_record_mode )
       {
         // switching from loop playback to loop record
+        if( button_strip.mode() == BUTTON_STRIP::MODE::RECORD_SEQ || button_strip.mode() == BUTTON_STRIP::MODE::PLAY_SEQ )
+        {
+          button_strip.clear_sequence();
+        }
+        
         audio_recorder.start_record();
 
+        looper_interface.set_recording( false, time_ms ); // may have been recording pattern sequence
         looper_interface.set_mode_pending( true, time_ms );
 
         mode_change_pending = true;

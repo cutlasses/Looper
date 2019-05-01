@@ -59,7 +59,6 @@ private:
   bool              update_free_play( uint32_t time_ms, uint32_t& activated_segment );
   bool              update_play_sequence( uint32_t time_ms, uint32_t& activated_segment );
   void              record_sequence_event( uint32_t time_ms, int32_t activated_segment );
-  void              clear_sequence();
   
 public:
 
@@ -71,6 +70,7 @@ public:
   void              start_record_sequence(uint32_t time_ms );
   void              start_sequence_playback( uint32_t time_ms );
   void              stop_sequence();
+  void              clear_sequence();
 
   MODE              mode() const;
 
