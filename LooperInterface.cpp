@@ -3,9 +3,9 @@
 
 constexpr const int GAIN_POT            = 0;
 constexpr const int SATURATION_POT      = 1;
-constexpr const int DELAY_MIX_POT       = 2;
-constexpr const int DELAY_TIME_POT      = 3;
-constexpr const int DELAY_FEEDBACK_POT  = 4;
+constexpr const int DELAY_TIME_POT      = 2;
+constexpr const int DELAY_FEEDBACK_POT  = 3;
+constexpr const int DELAY_MIX_POT       = 4;
 constexpr const int LOOPER_MIX_POT      = 5;
 
 LOOPER_INTERFACE::LOOPER_INTERFACE() :
@@ -153,7 +153,8 @@ float LOOPER_INTERFACE::delay_mix() const
 
 float LOOPER_INTERFACE::delay_time() const
 {
-  return m_dials[DELAY_TIME_POT].value();  
+  static constexpr float MAX_DELAY_TIME_MS = 500.0f;
+  return m_dials[DELAY_TIME_POT].value() * MAX_DELAY_TIME_MS;  
 }
 
 float LOOPER_INTERFACE::delay_feedback() const

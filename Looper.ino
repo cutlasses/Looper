@@ -42,13 +42,23 @@ SD_AUDIO_RECORDER audio_recorder;
 AudioAmplifier    input_gain;
 AudioMixer4       looper_mixer;
 AudioEffectDelay  delay_line;
-AudioMixer4       delay_mixer;
+AudioMixer4       delay_feedback_mixer;
+AudioMixer4       output_mixer;
 
 AudioConnection   patch_cord_1( io.audio_input, 0, input_gain, 0 );
 AudioConnection   patch_cord_2( input_gain, 0, audio_recorder, 0 );
-AudioConnection   patch_cord_3( io.audio_input, 0, looper_mixer, 0 );
+AudioConnection   patch_cord_3( input_gain, 0, looper_mixer, 0 );
 AudioConnection   patch_cord_4( audio_recorder, 0, looper_mixer, 1 );
-AudioConnection   patch_cord_5( looper_mixer, 0, io.audio_output, 0 );
+AudioConnection   patch_cord_5( looper_mixer, 0, delay_feedback_mixer, 0 );
+AudioConnection   patch_cord_6( looper_mixer, 0, output_mixer, 0 );
+AudioConnection   patch_cord_7( output_mixer, 0, io.audio_output, 0 );
+
+// delay section
+AudioConnection   patch_cord_8( delay_feedback_mixer, 0, delay_line, 0 );
+AudioConnection   patch_cord_9( delay_line, 0, delay_feedback_mixer, 1 );
+AudioConnection   patch_cord_10( delay_line, 0, output_mixer, 1 );
+
+
 
 BUTTON_STRIP      button_strip( I2C_ADDRESS );
 
@@ -350,9 +360,19 @@ void loop()
   
   input_gain.gain( looper_interface.gain() );
 
+  delay_line.delay( 0, looper_interface.delay_time() );
+
   const float looper_mix = looper_interface.looper_mix();
   looper_mixer.gain( 0, 1.0f - looper_mix );
   looper_mixer.gain( 1, looper_mix );
+
+  const float delay_feedback = looper_interface.delay_feedback();
+  delay_feedback_mixer.gain( 0, 1.0f );
+  delay_feedback_mixer.gain( 1, delay_feedback );
+
+  const float delay_mix = looper_interface.delay_mix();
+  output_mixer.gain( 0, 1.0f - delay_mix );
+  output_mixer.gain( 1, delay_mix );
 
   uint32_t segment;
   if( button_strip.update( time_ms, segment ) )
