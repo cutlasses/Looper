@@ -145,7 +145,7 @@ void setup()
     // stop here if no SD card, but print a message
     while (1)
     {
-      Serial.println("Unable to access the SD card");
+      DEBUG_TEXT_LINE("Unable to access the SD card");
       delay(500);
     }
   }
@@ -153,17 +153,17 @@ void setup()
   File root = SD.open("/");
   fill_sample_list( root );
 
-  Serial.println("Files:");
+  DEBUG_TEXT_LINE("Files:");
   for( int i = 0; i < num_samples_loaded; ++i )
   {
-    Serial.println( sample_files[i] );
+    DEBUG_TEXT_LINE( sample_files[i] );
   }
 
   looper_interface.setup( num_samples_loaded );
 
   Wire.begin( I2C_ADDRESS );
 
-  Serial.print("Setup finished!\n");
+  DEBUG_TEXT_LINE("Setup finished!\n");
   delay(500);
 }
 
@@ -306,13 +306,13 @@ void update_looper_mode(uint64_t time_ms)
           }
           case SD_AUDIO_RECORDER::MODE::PLAY:
           { 
-            Serial.println("Record during play not supported"); // eventually this should record a sequence of key presses
+            DEBUG_TEXT_LINE("Record during play not supported"); // eventually this should record a sequence of key presses
             break;           
           }
           default:
           {
             // further modes to come..
-            Serial.println("Unknown looper mode");
+            DEBUG_TEXT_LINE("Unknown looper mode");
             break;
           }
         }
@@ -329,7 +329,7 @@ void update_looper_mode(uint64_t time_ms)
     }
     default:
     {
-      Serial.println("Error:what mode is this");
+      DEBUG_TEXT_LINE("Error:what mode is this");
       break;
     }
   }
@@ -344,8 +344,6 @@ void loop()
   update_looper_mode( time_ms );
 
   audio_recorder.update_main_loop(); 
-
-  // TODO reset button strip each time loop restarts?? (return state in update_main_loop)
 
   // set interface paramaters
   audio_recorder.set_saturation( looper_interface.saturation() );

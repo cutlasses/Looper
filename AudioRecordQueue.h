@@ -27,12 +27,12 @@ public:
 
   void debug_log_stats() const
   {
-    Serial.print( "AUDIO_RECORD_QUEUE::debug_log_stats() " );
-    Serial.print( m_queue_name );
-    Serial.print( " Size:" );
-    Serial.print( size() );  
-    Serial.print( " Remaining:" );
-    Serial.println( remaining() );       
+    DEBUG_TEXT( "AUDIO_RECORD_QUEUE::debug_log_stats() " );
+    DEBUG_TEXT( m_queue_name );
+    DEBUG_TEXT( " Size:" );
+    DEBUG_TEXT( size() );  
+    DEBUG_TEXT( " Remaining:" );
+    DEBUG_TEXT_LINE( remaining() );       
   }
 
   void start()
@@ -139,7 +139,7 @@ public:
   {   
     if( block == nullptr )
     {
-      Serial.println("null block in queue");
+      DEBUG_TEXT_LINE("null block in queue");
       return;
     }
   
@@ -161,8 +161,8 @@ public:
   
     if( h == m_tail )
     {
-      Serial.print("AUDIO_RECORD_QUEUE::update() QUEUE FULL, RELEASING BLOCK:");
-      Serial.println((int)block, HEX);
+      DEBUG_TEXT("AUDIO_RECORD_QUEUE::update() QUEUE FULL, RELEASING BLOCK:");
+      DEBUG_TEXT_LINE_MODE((int)block, HEX);
       debug_log_stats();
       m_audio_producer.release_block_func( block );
     }

@@ -129,9 +129,7 @@ void SD_AUDIO_RECORDER::update_main_loop()
       
       // has the loop just finished
       if( m_finished_playback )
-      { 
-        Serial.println("REC LOOP");
-        
+      {         
         switch_play_record_buffers();
 
         AudioNoInterrupts();
@@ -175,7 +173,7 @@ void SD_AUDIO_RECORDER::play()
 {
   AudioNoInterrupts();
 
-  Serial.println("SD_AUDIO_RECORDER::play()");
+  DEBUG_TEXT_LINE("SD_AUDIO_RECORDER::play()");
 
   if( m_mode == MODE::RECORD_PLAY || m_mode == MODE::RECORD_OVERDUB )
   {
@@ -198,7 +196,7 @@ void SD_AUDIO_RECORDER::play_file( const char* filename, bool loop )
 
   if( m_mode != MODE::PLAY )
   {
-    Serial.println("Stop play named file");
+    DEBUG_TEXT_LINE("Stop play named file");
     stop_current_mode( false );
   }
   
@@ -216,8 +214,8 @@ void SD_AUDIO_RECORDER::stop()
 {
   AudioNoInterrupts();
   
-  Serial.print("SD_AUDIO_RECORDER::stop() ");
-  Serial.println( mode_to_string(m_mode) );
+  DEBUG_TEXT("SD_AUDIO_RECORDER::stop() ");
+  DEBUG_TEXT_LINE( mode_to_string(m_mode) );
   
   stop_current_mode( true );
 
@@ -257,8 +255,8 @@ void SD_AUDIO_RECORDER::start_record()
     }
     default:
     {
-      Serial.print( "SD_AUDIO_RECORDER::start_record() - Invalid mode: " );
-      Serial.println( mode_to_string( m_mode ) );
+      DEBUG_TEXT( "SD_AUDIO_RECORDER::start_record() - Invalid mode: " );
+      DEBUG_TEXT_LINE( mode_to_string( m_mode ) );
       break;
     }   
   }
@@ -294,8 +292,8 @@ void SD_AUDIO_RECORDER::stop_record()
     }
     default:
     {
-      Serial.print( "SD_AUDIO_RECORDER::start_record() - Invalid mode: " );
-      Serial.println( mode_to_string( m_mode ) );
+      DEBUG_TEXT( "SD_AUDIO_RECORDER::start_record() - Invalid mode: " );
+      DEBUG_TEXT_LINE( mode_to_string( m_mode ) );
       break;
     }   
   }
@@ -332,10 +330,6 @@ audio_block_t* SD_AUDIO_RECORDER::create_record_block()
       audio_block_t* play_block = m_just_played_block;
       m_just_played_block = nullptr;
 
-      if( play_block == nullptr )
-      {
-        Serial.println("Adding null record block 1");
-      }
       return play_block;
   }
   if( m_mode == MODE::RECORD_OVERDUB )
@@ -363,10 +357,6 @@ audio_block_t* SD_AUDIO_RECORDER::create_record_block()
       audio_block_t* play_block = m_just_played_block;
       m_just_played_block = nullptr;
 
-      if( play_block == nullptr )
-      {
-        Serial.println("Adding null record block 2");
-      }
       return play_block;
     }
 
@@ -384,10 +374,6 @@ audio_block_t* SD_AUDIO_RECORDER::create_record_block()
     audio_block_t* in_block = receiveReadOnly();
     ASSERT_MSG( in_block != nullptr, "Record Initial - unable to receive block" );
 
-    if( in_block == nullptr )
-    {
-      Serial.println("Adding null record block 3");
-    }
     return in_block;
   }
 }
@@ -399,8 +385,8 @@ void SD_AUDIO_RECORDER::release_block_func(audio_block_t* block)
 
 bool SD_AUDIO_RECORDER::start_playing_sd()
 {
-  Serial.print("SD_AUDIO_RECORDER::start_playing_sd() ");
-  Serial.println( m_play_back_filename );
+  DEBUG_TEXT("SD_AUDIO_RECORDER::start_playing_sd() ");
+  DEBUG_TEXT_LINE( m_play_back_filename );
   
   stop_playing_sd();
 
@@ -411,8 +397,8 @@ bool SD_AUDIO_RECORDER::start_playing_sd()
   
   if( !m_play_back_audio_file )
   {
-    Serial.print("Unable to open file: ");
-    Serial.println( m_play_back_filename );
+    DEBUG_TEXT("Unable to open file: ");
+    DEBUG_TEXT_LINE( m_play_back_filename );
 #if defined(HAS_KINETIS_SDHC)
       if (!(SIM_SCGC3 & SIM_SCGC3_SDHC)) AudioStopUsingSPI();
 #else
@@ -422,12 +408,12 @@ bool SD_AUDIO_RECORDER::start_playing_sd()
     return false;
   }
 
-  Serial.print("Play File loaded ");
-  Serial.print(m_play_back_filename);
+  DEBUG_TEXT("Play File loaded ");
+  DEBUG_TEXT(m_play_back_filename);
   m_play_back_file_size = m_play_back_audio_file.size();
   m_play_back_file_offset = 0;
-  Serial.print(" file size: ");
-  Serial.println(m_play_back_file_size);
+  DEBUG_TEXT(" file size: ");
+  DEBUG_TEXT_LINE(m_play_back_file_size);
 
   // prime the first read block in the read queue
   for( int i = 0; i < INITIAL_PLAY_BLOCKS; ++i )
@@ -450,7 +436,7 @@ bool SD_AUDIO_RECORDER::update_playing_sd()
       audio_block_t* block = allocate();
       if( block == nullptr )
       {
-        Serial.println( "update_playing_sd() - Failed to allocate" );
+        DEBUG_TEXT_LINE( "update_playing_sd() - Failed to allocate" );
         return false;
       }
     
@@ -469,15 +455,15 @@ bool SD_AUDIO_RECORDER::update_playing_sd()
 
       if( block == nullptr )
       {
-        Serial.println("Adding null play block");
+        DEBUG_TEXT_LINE("Adding null play block");
       }
       m_sd_play_queue.add_block( block );
     }
   }
   else
   {
-    Serial.print("File End ");
-    Serial.println(m_play_back_audio_file.name());
+    DEBUG_TEXT("File End ");
+    DEBUG_TEXT_LINE(m_play_back_audio_file.name());
 
     disable_SPI_audio();
             
@@ -516,7 +502,7 @@ void SD_AUDIO_RECORDER::update_playing_interrupt()
 
 void SD_AUDIO_RECORDER::stop_playing_sd()
 {
-  Serial.println("SD_AUDIO_RECORDER::stop_playing_sd");
+  DEBUG_TEXT_LINE("SD_AUDIO_RECORDER::stop_playing_sd");
 
   __disable_irq();
   if( m_mode == MODE::PLAY || m_mode == MODE::RECORD_PLAY || m_mode == MODE::RECORD_OVERDUB )
@@ -533,8 +519,8 @@ void SD_AUDIO_RECORDER::stop_playing_sd()
 
 void SD_AUDIO_RECORDER::start_recording_sd()
 {  
-  Serial.print("SD_AUDIO_RECORDER::start_recording_sd() ");
-  Serial.println(m_record_filename);
+  DEBUG_TEXT("SD_AUDIO_RECORDER::start_recording_sd() ");
+  DEBUG_TEXT_LINE(m_record_filename);
   if( SD.exists( m_record_filename ) )
   {
     // delete previously existing file (SD library will append to the end)
@@ -546,12 +532,12 @@ void SD_AUDIO_RECORDER::start_recording_sd()
   if( m_recorded_audio_file )
   {
     m_sd_record_queue.start();
-    Serial.println( m_record_filename );
+    DEBUG_TEXT_LINE( m_record_filename );
   }
   else
   {
-    Serial.print("Unable to open file: ");
-    Serial.println( m_record_filename );
+    DEBUG_TEXT("Unable to open file: ");
+    DEBUG_TEXT_LINE( m_record_filename );
   }
 }
 
@@ -583,7 +569,7 @@ void SD_AUDIO_RECORDER::update_recording_sd()
 
 void SD_AUDIO_RECORDER::stop_recording_sd( bool write_remaining_blocks )
 {
-  Serial.println("SD_AUDIO_RECORDER::stop_recording_sd()");
+  DEBUG_TEXT_LINE("SD_AUDIO_RECORDER::stop_recording_sd()");
   m_sd_record_queue.stop();
 
   if( is_recording() )
@@ -591,8 +577,8 @@ void SD_AUDIO_RECORDER::stop_recording_sd( bool write_remaining_blocks )
     // empty the record queue
     if( write_remaining_blocks )
     {
-      Serial.print("Writing final blocks:");
-      Serial.println( m_sd_record_queue.size() );
+      DEBUG_TEXT("Writing final blocks:");
+      DEBUG_TEXT_LINE( m_sd_record_queue.size() );
       while( m_sd_record_queue.size() > 0 )
       {
         m_recorded_audio_file.write( reinterpret_cast<byte*>(m_sd_record_queue.read_buffer()), 256 );
@@ -656,10 +642,10 @@ void SD_AUDIO_RECORDER::switch_play_record_buffers()
   // toggle record/play filenames
   swap( m_play_back_filename, m_record_filename );
 
-  //Serial.print( "switch_play_record_buffers() Play: ");
-  //Serial.print( m_play_back_filename );
-  //Serial.print(" Record: " );
-  //Serial.println( m_record_filename );
+  //DEBUG_TEXT( "switch_play_record_buffers() Play: ");
+  //DEBUG_TEXT( m_play_back_filename );
+  //DEBUG_TEXT(" Record: " );
+  //DEBUG_TEXT_LINE( m_record_filename );
 }
 
 int16_t SD_AUDIO_RECORDER::soft_clip_sample( int16_t sample ) const
@@ -711,8 +697,8 @@ uint32_t SD_AUDIO_RECORDER::play_back_file_time_ms() const
   const uint64_t num_samples = m_play_back_file_size / 2;
   const uint64_t time_in_ms = ( num_samples * 1000 ) / AUDIO_SAMPLE_RATE;
 
-  //Serial.print("Play back time in seconds:");
-  //Serial.println(time_in_ms / 1000.0f);
+  //DEBUG_TEXT("Play back time in seconds:");
+  //DEBUG_TEXT_LINE(time_in_ms / 1000.0f);
 
   return time_in_ms;
 }

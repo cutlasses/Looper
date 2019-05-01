@@ -23,9 +23,13 @@ inline bool _assert_fail( const char* assert, const char* msg )
 
 #define ASSERT_MSG(x, msg) ((void)((x) || (_assert_fail(#x,msg))))
 #define DEBUG_TEXT(x) if(serial_port_initialised) Serial.print(x);
+#define DEBUG_TEXT_LINE(x) if(serial_port_initialised) Serial.println(x);
+#define DEBUG_TEXT_LINE_MODE(x, y) if(serial_port_initialised) Serial.println(x, y);
 #else
 #define ASSERT_MSG(x, msg)
 #define DEBUG_TEXT(x)
+#define DEBUG_TEXT_LINE(x)
+#define DEBUG_TEXT_LINE_MODE(x, y)
 #endif
 
 #ifdef SHOW_TIMED_SECTIONS

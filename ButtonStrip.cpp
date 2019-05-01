@@ -97,8 +97,8 @@ bool BUTTON_STRIP::update_play_sequence( uint32_t time_ms, uint32_t& activated_s
 
   if( time_ms - m_seq_start_time_stamp >= current_event.m_time_stamp )
   {
-    Serial.print("triggered event:");
-    Serial.println(current_event.m_segment);
+    DEBUG_TEXT("triggered event:");
+    DEBUG_TEXT_LINE(current_event.m_segment);
 
     m_step_num                = current_event.m_segment;
     activated_segment         = current_event.m_segment;
