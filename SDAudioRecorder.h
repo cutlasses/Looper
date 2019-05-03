@@ -69,11 +69,12 @@ private:
 
   float               m_soft_clip_coefficient;
 
-  static constexpr const int PLAY_QUEUE_SIZE              = 64;
-  static constexpr const int RECORD_QUEUE_SIZE            = 53; // matches the teensy audio library
-  static constexpr const int INITIAL_PLAY_BLOCKS          = 16;
-  static constexpr const int MIN_PREFERRED_PLAY_BLOCKS    = 4;
-  static constexpr const int MAX_PREFERRED_RECORD_BLOCKS  = 40;
+  static constexpr const int PLAY_QUEUE_SIZE                          = 64;
+  static constexpr const int RECORD_QUEUE_SIZE                        = 53; // matches the teensy audio library
+  static constexpr const int INITIAL_PLAY_BLOCKS                      = 16;
+  static constexpr const int MIN_PREFERRED_PLAY_BLOCKS                = 32;
+  static constexpr const int MAX_PREFERRED_RECORD_BLOCKS_WHEN_PLAYING = 6; // approx 14ms latency when playing
+  static constexpr const int MAX_PREFERRED_RECORD_BLOCKS              = 40;
   AUDIO_RECORD_QUEUE<PLAY_QUEUE_SIZE, SD_AUDIO_RECORDER>    m_sd_play_queue;
   AUDIO_RECORD_QUEUE<RECORD_QUEUE_SIZE, SD_AUDIO_RECORDER>  m_sd_record_queue;
 

@@ -383,4 +383,14 @@ void loop()
       audio_recorder.set_read_position( t );
     }
   }
+
+/*
+  const int processor_usage = AudioProcessorUsage();
+  if( processor_usage > 45 )
+  {
+    Serial.print( "Performance spike: " );
+    Serial.print( processor_usage );
+    Serial.print( "\n" );
+  }
+*/
 }

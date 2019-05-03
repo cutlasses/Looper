@@ -430,7 +430,8 @@ bool SD_AUDIO_RECORDER::update_playing_sd()
 
   if( m_play_back_audio_file.available() )
   {    
-    if( m_sd_play_queue.remaining() > 0 )
+    if( m_sd_play_queue.remaining() > 0 &&
+        (m_mode != MODE::PLAY || m_sd_play_queue.size() <= MAX_PREFERRED_RECORD_BLOCKS_WHEN_PLAYING) )
     {
       // allocate the audio blocks to transmit
       audio_block_t* block = allocate();
