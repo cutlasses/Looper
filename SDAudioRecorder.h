@@ -50,6 +50,7 @@ private:
 
   audio_block_t*      m_input_queue_array[1];
   audio_block_t*      m_just_played_block;   // block which was just played from the SD file
+  audio_block_t*      m_current_play_block;  // block which is currently being played (when speed != 1 we don't always play 1 block) - could just use m_just_played_block?
 
   MODE                m_mode;
   MODE                m_pending_mode;         // used to switch modes at the loop point
@@ -66,6 +67,9 @@ private:
 
   bool                m_looping;
   bool                m_finished_playback;
+
+  float               m_speed;
+  float               m_read_head;
 
   float               m_soft_clip_coefficient;
 
@@ -120,4 +124,3 @@ private:
 #endif    
   }
 };
-

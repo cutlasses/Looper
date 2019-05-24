@@ -8,12 +8,13 @@ constexpr const char* RECORDING_FILENAME1 = "RECORD1.RAW";
 constexpr const char* RECORDING_FILENAME2 = "RECORD2.RAW";
 
 SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
-  AudioStream( 1, m_input_queue_array ),
-  m_just_played_block( nullptr ),
-  m_mode( MODE::STOP ),
-  m_pending_mode( MODE::NONE ),
-  m_play_back_filename( RECORDING_FILENAME1 ),
-  m_record_filename( RECORDING_FILENAME1 ),
+  AudioStream(1, m_input_queue_array),
+  m_just_played_block(nullptr),
+  m_current_play_block(nullptr),
+  m_mode(MODE::STOP),
+  m_pending_mode(MODE::NONE),
+  m_play_back_filename(RECORDING_FILENAME1),
+  m_record_filename(RECORDING_FILENAME1),
   m_recorded_audio_file(),
   m_play_back_audio_file(),
   m_play_back_file_size(0),
@@ -22,9 +23,11 @@ SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   m_jump_pending(false),
   m_looping(false),
   m_finished_playback(false),
-  m_soft_clip_coefficient( 0.0f ),
-  m_sd_play_queue(*this, "PLAY_QUEUE" ),
-  m_sd_record_queue(*this, "RECORD_QUEUE" )
+  m_speed(1.0f),
+  m_read_head(0.0f),
+  m_soft_clip_coefficient(0.0f),
+  m_sd_play_queue(*this, "PLAY_QUEUE"),
+  m_sd_record_queue(*this, "RECORD_QUEUE")
 {
     m_sd_play_queue.start();
 }
@@ -387,6 +390,10 @@ bool SD_AUDIO_RECORDER::start_playing_sd()
 {
   DEBUG_TEXT("SD_AUDIO_RECORDER::start_playing_sd() ");
   DEBUG_TEXT_LINE( m_play_back_filename );
+
+  ASSERT_MSG( m_current_play_block == nullptr, "Leaking current play block" );
+
+  m_read_head = 0.0f;
   
   stop_playing_sd();
 
@@ -478,21 +485,70 @@ void SD_AUDIO_RECORDER::update_playing_interrupt()
 {  
   if( m_sd_play_queue.size() > 0 )
   {
-    const bool set_just_played_block = is_recording();
-
-    audio_block_t* block = m_sd_play_queue.read_block();
-    ASSERT_MSG( block != nullptr, "update_playing_interrupt() null block" );
-    transmit( block );  
-    m_sd_play_queue.release_buffer(false);
-    
-    if( set_just_played_block )
+    // when recording - speed is always 1 and need to set just_played_block for overdub
+    if( is_recording() )
     {
+      audio_block_t* block = m_sd_play_queue.read_block();
+      ASSERT_MSG( block != nullptr, "update_playing_interrupt() null block" );
+      transmit( block );  
+      m_sd_play_queue.release_buffer(false);
+
       ASSERT_MSG( m_just_played_block == nullptr, "Leaking just_played_block" );
       m_just_played_block = block;
     }
+    // when playing - apply speed to audio playback
     else
     {
-      release(block);
+      audio_block_t* block_to_transmit = allocate();
+
+      if( block_to_transmit == nullptr )
+      {
+        DEBUG_TEXT( "Unable to allocate block_to_transmit" );
+        return;
+      }
+
+      auto get_next_play_block = [this]()
+      {       
+        audio_block_t* play_block = m_sd_play_queue.read_block();
+        ASSERT_MSG( play_block != nullptr, "update_playing_interrupt() get_next_play_block() null block" );
+        m_sd_play_queue.release_buffer(false);
+
+        return play_block;
+      };
+
+      auto read_from_block_with_speed = []( const audio_block_t* source, audio_block_t* target, float speed, float& read_head, int& write_head )
+      {
+        // TODO add interpolation!
+        while( static_cast<int>(read_head) < AUDIO_BLOCK_SAMPLES && write_head < AUDIO_BLOCK_SAMPLES )
+        {
+          target[write_head] = source[static_cast<int>(read_head)];
+          ++write_head;
+          read_head += speed;
+        }
+        
+        return false;
+      };
+      
+      if( m_current_play_block == nullptr || static_cast<int>(m_read_head) >= AUDIO_BLOCK_SAMPLES )
+      {
+        m_read_head           = 0.0f;
+        m_current_play_block  = get_next_play_block();
+      }
+
+      int write_head = 0;
+      while( write_head < AUDIO_BLOCK_SAMPLES )
+      {
+        // read from current play block
+        if( read_from_block_with_speed( m_current_play_block, block_to_transmit, m_speed, m_read_head, write_head ) )
+        {
+          // end of block reached - fetch another block from the queue
+          release( m_current_play_block );
+          m_read_head           = 0.0f;
+          m_current_play_block  = get_next_play_block();
+        }
+      }
+
+      transmit( block_to_transmit );
     }
   }
   else
@@ -513,6 +569,12 @@ void SD_AUDIO_RECORDER::stop_playing_sd()
     disable_SPI_audio();
   }
   __enable_irq();
+
+  if( m_current_play_block != nullptr )
+  {
+    release( m_current_play_block );
+    m_current_play_block = nullptr;
+  }
 
   // TODO - do we need to write the rest of the queue?
   //m_sd_play_queue.stop();
@@ -575,6 +637,12 @@ void SD_AUDIO_RECORDER::stop_recording_sd( bool write_remaining_blocks )
 
   if( is_recording() )
   {
+    if( m_just_played_block != nullptr )
+    {
+      release( m_just_played_block );
+      m_just_played_block = nullptr;
+    }
+    
     // empty the record queue
     if( write_remaining_blocks )
     {
@@ -618,11 +686,7 @@ void SD_AUDIO_RECORDER::stop_current_mode( bool reset_play_file )
       m_sd_play_queue.clear();
       m_sd_record_queue.clear();
 
-      if( m_just_played_block != nullptr )
-      {
-        release( m_just_played_block );
-        m_just_played_block = nullptr;
-      }
+      ASSERT_MSG( m_just_played_block == nullptr, "This should have been reset in stop_recording_sd()" );
       
       break;
     }
@@ -703,4 +767,3 @@ uint32_t SD_AUDIO_RECORDER::play_back_file_time_ms() const
 
   return time_in_ms;
 }
-
