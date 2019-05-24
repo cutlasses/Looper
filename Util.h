@@ -202,27 +202,69 @@ namespace DSP_UTILS
     const float sample_f = static_cast<float>(sample) / static_cast<float>(std::numeric_limits<int16_t>::max());
     ASSERT_MSG( sample_f >= -1.01f && sample_f <= 1.01f, "Soft clip - sample scale error" );
     const float clipped_sample = sample_f - ( clip_coefficient * ( sample_f * sample_f * sample_f ) );
-
-    /*
-    if( debug || sample_f < -1.01f || sample_f > 1.01f )
-    {
-      Serial.print("soft_clip ");
-      if( !debug )
-      {
-        Serial.print( "clip error ");
-      }
-      Serial.print(sample_f);
-      Serial.print(" ");
-      Serial.print(clipped_sample);
-      Serial.print(" ");
-      Serial.println(clip_coefficient);
-    }
-    */
   
     // scale back to [int16 min, int16 max]
     const int16_t output_sample = round_to_int( clipped_sample * std::numeric_limits<int16_t>::max() );
   
     return output_sample;
+  }
+
+  // from http://polymathprogrammer.com/2008/09/29/linear-and-cubic-interpolation/
+  inline float cubic_interpolation( float p0, float p1, float p2, float p3, float t )
+  {
+    const float one_minus_t = 1.0f - t;
+    return ( one_minus_t * one_minus_t * one_minus_t * p0 ) + ( 3 * one_minus_t * one_minus_t * t * p1 ) + ( 3 * one_minus_t * t * t * p2 ) + ( t * t * t * p3 );
+  }
+
+  inline int16_t read_sample_cubic( float read_head, const int16_t* sample_buffer, int buffer_size )
+  {
+    const int int_part      = trunc_to_int( read_head );
+    const float frac_part   = read_head - int_part;
+  
+    auto read_sample = [sample_buffer, buffer_size]( int read_position ) -> int16_t
+    {
+      ASSERT_MSG( read_position >= 0 && read_position < buffer_size, "read_sample() OUT OF BOUNDS" );
+      return sample_buffer[read_position];
+    };
+    
+    float p0;
+    if( int_part >= 2 )
+    {
+      p0            = read_sample( int_part - 2 );
+    }
+    else
+    {
+      // at the beginning of the buffer, assume previous sample was the same
+      p0            = read_sample( 0 );
+    }
+    
+    float p1;
+    if( int_part <= 2 )
+    {
+      // reuse p0
+      p1            = p0;
+    }
+    else
+    {
+      p1            = read_sample( int_part - 1 );
+    }
+    
+    float p2        = read_sample( int_part );
+    
+    float p3;
+    if( int_part < buffer_size - 1)
+    {
+      p3            = read_sample( int_part + 1 );
+    }
+    else
+    {
+      p3            = p2;
+    }
+    
+    const float t   = lerp( 0.33333f, 0.66666f, frac_part );
+    
+    float sampf     = cubic_interpolation( p0, p1, p2, p3, t );
+    return round_to_int( sampf );
   }
 
 }

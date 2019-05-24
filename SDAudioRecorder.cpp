@@ -7,6 +7,7 @@
 constexpr const char* RECORDING_FILENAME1 = "RECORD1.RAW";
 constexpr const char* RECORDING_FILENAME2 = "RECORD2.RAW";
 
+
 SD_AUDIO_RECORDER::SD_AUDIO_RECORDER() :
   AudioStream(1, m_input_queue_array),
   m_just_played_block(nullptr),
@@ -518,15 +519,13 @@ void SD_AUDIO_RECORDER::update_playing_interrupt()
 
       auto read_from_block_with_speed = []( const audio_block_t* source, audio_block_t* target, float speed, float& read_head, int& write_head )
       {
-        // TODO add interpolation!
         while( static_cast<int>(read_head) < AUDIO_BLOCK_SAMPLES && write_head < AUDIO_BLOCK_SAMPLES )
         {
-          target[write_head] = source[static_cast<int>(read_head)];
+          //target[write_head] = source[static_cast<int>(read_head)];
+          target->data[write_head] = DSP_UTILS::read_sample_cubic( read_head, target->data, AUDIO_BLOCK_SAMPLES );
           ++write_head;
           read_head += speed;
         }
-        
-        return false;
       };
       
       if( m_current_play_block == nullptr || static_cast<int>(m_read_head) >= AUDIO_BLOCK_SAMPLES )
@@ -539,7 +538,8 @@ void SD_AUDIO_RECORDER::update_playing_interrupt()
       while( write_head < AUDIO_BLOCK_SAMPLES )
       {
         // read from current play block
-        if( read_from_block_with_speed( m_current_play_block, block_to_transmit, m_speed, m_read_head, write_head ) )
+        read_from_block_with_speed( m_current_play_block, block_to_transmit, m_speed, m_read_head, write_head );
+        if( static_cast<int>(m_read_head) >= AUDIO_BLOCK_SAMPLES )
         {
           // end of block reached - fetch another block from the queue
           release( m_current_play_block );
