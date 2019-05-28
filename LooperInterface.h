@@ -51,9 +51,10 @@ private:
     bool                      sample_to_play( int& sample_index );
 
     float                     gain() const;
-    float                     saturation() const;
-    float                     delay_mix() const;
+    float                     saturation() const;       // not on a dial
+    float                     play_back_speed() const;
     float                     delay_time() const;
     float                     delay_feedback() const;
+    float                     delay_mix() const;
     float                     looper_mix() const;
 };

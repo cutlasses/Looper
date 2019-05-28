@@ -42,6 +42,7 @@ public:
   static const char*  mode_to_string( MODE mode );
 
   void                set_saturation( float saturation );
+  void                set_speed( float speed );
 
   //// For AUDIO_RECORD_QUEUE
   void                release_block_func(audio_block_t* block);

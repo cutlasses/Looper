@@ -728,6 +728,14 @@ void SD_AUDIO_RECORDER::set_saturation( float saturation )
   m_soft_clip_coefficient = lerp( MIN_SATURATION, MAX_SATURATION, saturation );
 }
 
+void SD_AUDIO_RECORDER::set_speed( float speed )
+{
+  constexpr const float MIN_SPEED = 0.25f;
+  constexpr const float MAX_SPEED = 2.0f;
+
+  m_speed = lerp( MIN_SPEED, MAX_SPEED, speed ); 
+}
+
 const char* SD_AUDIO_RECORDER::mode_to_string( MODE mode )
 {
   switch( mode )

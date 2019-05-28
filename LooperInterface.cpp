@@ -2,7 +2,8 @@
 #include "Util.h"
 
 constexpr const int GAIN_POT            = 0;
-constexpr const int SATURATION_POT      = 1;
+//constexpr const int SATURATION_POT    = 1;
+constexpr const int SPEED_POT           = 1;
 constexpr const int DELAY_TIME_POT      = 2;
 constexpr const int DELAY_FEEDBACK_POT  = 3;
 constexpr const int DELAY_MIX_POT       = 4;
@@ -143,8 +144,14 @@ float LOOPER_INTERFACE::gain() const
 float LOOPER_INTERFACE::saturation() const
 {
   // saturation value for soft clipping
-  return m_dials[SATURATION_POT].value();
+  //return m_dials[SATURATION_POT].value();
+  return 0.65f;
 }
+
+ float LOOPER_INTERFACE::play_back_speed() const
+ {
+  return m_dials[SPEED_POT].value();
+ }
 
 float LOOPER_INTERFACE::delay_mix() const
 {

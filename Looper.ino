@@ -357,6 +357,7 @@ void loop()
 
   // set interface paramaters
   audio_recorder.set_saturation( looper_interface.saturation() );
+  audio_recorder.set_speed( looper_interface.play_back_speed() );
   
   input_gain.gain( looper_interface.gain() );
 
