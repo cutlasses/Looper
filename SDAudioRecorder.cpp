@@ -392,11 +392,11 @@ bool SD_AUDIO_RECORDER::start_playing_sd()
   DEBUG_TEXT("SD_AUDIO_RECORDER::start_playing_sd() ");
   DEBUG_TEXT_LINE( m_play_back_filename );
 
-  ASSERT_MSG( m_current_play_block == nullptr, "Leaking current play block" );
-
   m_read_head = 0.0f;
   
   stop_playing_sd();
+
+  ASSERT_MSG( m_current_play_block == nullptr, "Leaking current play block" );
 
   enable_SPI_audio();
   __disable_irq();
@@ -504,7 +504,7 @@ void SD_AUDIO_RECORDER::update_playing_interrupt()
 
       if( block_to_transmit == nullptr )
       {
-        DEBUG_TEXT( "Unable to allocate block_to_transmit" );
+        DEBUG_TEXT_LINE( "Unable to allocate block_to_transmit" );
         return;
       }
 
@@ -521,8 +521,8 @@ void SD_AUDIO_RECORDER::update_playing_interrupt()
       {
         while( static_cast<int>(read_head) < AUDIO_BLOCK_SAMPLES && write_head < AUDIO_BLOCK_SAMPLES )
         {
-          //target[write_head] = source[static_cast<int>(read_head)];
-          target->data[write_head] = DSP_UTILS::read_sample_cubic( read_head, target->data, AUDIO_BLOCK_SAMPLES );
+          //target->data[write_head] = source->data[static_cast<int>(read_head)]; // no interpolation
+          target->data[write_head] = DSP_UTILS::read_sample_cubic( read_head, source->data, AUDIO_BLOCK_SAMPLES );
           ++write_head;
           read_head += speed;
         }
@@ -549,6 +549,8 @@ void SD_AUDIO_RECORDER::update_playing_interrupt()
       }
 
       transmit( block_to_transmit );
+
+      release( block_to_transmit );
     }
   }
   else
