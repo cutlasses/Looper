@@ -376,8 +376,9 @@ void loop()
   output_mixer.gain( 1, delay_mix );
 
   uint32_t activated_segment;
-  //uint32_t overriden_segment = clamp<uint32_t>( audio_recorder.playback_position() * BUTTON_STRIP::NUM_SEGMENTS, 0, BUTTON_STRIP::NUM_SEGMENTS - 1 );
-  if( button_strip.update( time_ms, activated_segment ) )
+  const float playback_pos = audio_recorder.playback_position();
+  uint32_t overridden_segment = clamp<uint32_t>( playback_pos * BUTTON_STRIP::NUM_SEGMENTS, 0, BUTTON_STRIP::NUM_SEGMENTS - 1 );
+  if( button_strip.update( time_ms, activated_segment, overridden_segment ) )
   {
     if( audio_recorder.mode() == SD_AUDIO_RECORDER::MODE::PLAY )
     {

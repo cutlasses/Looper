@@ -47,7 +47,8 @@ void BUTTON_STRIP::send_led_values(uint8_t led_values)
 bool BUTTON_STRIP::update_free_play( uint32_t time_ms, uint32_t& activated_segment, int overridden_segment )
 {
   bool step_triggered = false;
-  bool update_leds    = update_steps( time_ms, overridden_segment );
+  bool update_leds    = update_steps( time_ms, overridden_segment ) || m_force_update;
+  m_force_update      = false;
   
   if( !m_buttons_locked )
   {
@@ -228,8 +229,9 @@ void BUTTON_STRIP::start_sequence_playback( uint32_t time_ms )
 
 void BUTTON_STRIP::stop_sequence()
 {
-  m_running = false;
-  m_mode    = MODE::FREE_PLAY;
+  m_running       = false;
+  m_mode          = MODE::FREE_PLAY;
+  m_force_update  = true; 
 }
 
 BUTTON_STRIP::MODE BUTTON_STRIP::mode() const

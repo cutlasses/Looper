@@ -45,6 +45,7 @@ private:
 
   bool              m_running                   = false;
   bool              m_buttons_locked            = false;
+  bool              m_force_update              = true;
 
   DEBOUNCE_DETAILS  m_debounce_details[NUM_SEGMENTS];
 

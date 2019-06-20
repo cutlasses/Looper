@@ -780,7 +780,13 @@ uint32_t SD_AUDIO_RECORDER::play_back_file_time_ms() const
 
 float SD_AUDIO_RECORDER::playback_position() const
 {
-  const uint64_t num_samples = m_play_back_file_size / 2;
-  return m_play_back_file_offset / static_cast<float>(num_samples);
+  if( m_play_back_file_size > 0 )
+  {
+    return m_play_back_file_offset / static_cast<float>(m_play_back_file_size);
+  }
+  else
+  {
+    // no file recorded
+    return 0;
+  }
 }
-
