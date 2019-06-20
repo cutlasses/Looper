@@ -13,9 +13,10 @@ public:
     RECORD_SEQ,
     PLAY_SEQ
   };
+
+  static const constexpr int NUM_SEGMENTS               = 8;
   
 private:
-  static const constexpr int NUM_SEGMENTS               = 8;
   static const constexpr int32_t BUTTON_DEBOUNCE_MS     = 5;
   static const constexpr int64_t LED_I2C_UPDATE_TIME_MS = 30;
   static const constexpr int MAX_SEQUENCE_EVENTS        = 32;
@@ -78,4 +79,3 @@ public:
 
   int               num_segments() const;
 };
-

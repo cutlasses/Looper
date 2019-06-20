@@ -375,12 +375,13 @@ void loop()
   output_mixer.gain( 0, 1.0f - delay_mix );
   output_mixer.gain( 1, delay_mix );
 
-  uint32_t segment;
-  if( button_strip.update( time_ms, segment ) )
+  uint32_t activated_segment;
+  //uint32_t overriden_segment = clamp<uint32_t>( audio_recorder.playback_position() * BUTTON_STRIP::NUM_SEGMENTS, 0, BUTTON_STRIP::NUM_SEGMENTS - 1 );
+  if( button_strip.update( time_ms, activated_segment ) )
   {
     if( audio_recorder.mode() == SD_AUDIO_RECORDER::MODE::PLAY )
     {
-      const float t = segment / static_cast<float>(button_strip.num_segments());
+      const float t = activated_segment / static_cast<float>(button_strip.num_segments());
       audio_recorder.set_read_position( t );
     }
   }

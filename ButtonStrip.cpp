@@ -18,7 +18,7 @@ void BUTTON_STRIP::send_led_values(uint8_t led_values)
 
  bool BUTTON_STRIP::update_steps( uint32_t time_ms, int overridden_segment )
  {
-  if( overridden_segment >= 0 )
+  if( overridden_segment < 0 ) // segment not overriden
   {
     if( time_ms > m_next_step_time_stamp_ms )
     {
@@ -246,4 +246,3 @@ int BUTTON_STRIP::num_segments() const
 {
   return NUM_SEGMENTS;
 }
-
