@@ -55,8 +55,8 @@ private:
 
 
   void              send_led_values(uint8_t led_values);
-  bool              update_steps( uint32_t time_ms );
-  bool              update_free_play( uint32_t time_ms, uint32_t& activated_segment );
+  bool              update_steps( uint32_t time_ms, int overridden );
+  bool              update_free_play( uint32_t time_ms, uint32_t& activated_segment, int overridden_segment );
   bool              update_play_sequence( uint32_t time_ms, uint32_t& activated_segment );
   void              record_sequence_event( uint32_t time_ms, int32_t activated_segment );
   
@@ -64,7 +64,7 @@ public:
 
   BUTTON_STRIP( int i2c_address );
   
-  bool              update( uint32_t time_ms, uint32_t& activated_segment );
+  bool              update( uint32_t time_ms, uint32_t& activated_segment, int overridden_segment = -1 );
   
   void              start_free_play_sequence( uint32_t sequence_length_ms, uint32_t current_time_ms );
   void              start_record_sequence(uint32_t time_ms );

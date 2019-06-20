@@ -38,6 +38,7 @@ public:
   void                set_read_position( float t );
   
   uint32_t            play_back_file_time_ms() const;
+  float               playback_position() const;        // 0..1 (0 beginning, 1 end)
 
   static const char*  mode_to_string( MODE mode );
 

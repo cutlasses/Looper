@@ -16,27 +16,38 @@ void BUTTON_STRIP::send_led_values(uint8_t led_values)
   Wire.endTransmission();  
 }
 
- bool BUTTON_STRIP::update_steps( uint32_t time_ms )
+ bool BUTTON_STRIP::update_steps( uint32_t time_ms, int overridden_segment )
  {
-   if( time_ms > m_next_step_time_stamp_ms )
+  if( overridden_segment >= 0 )
   {
-    if( ++m_step_num >= NUM_SEGMENTS )
+    if( time_ms > m_next_step_time_stamp_ms )
     {
-      m_step_num = 0;
+      if( ++m_step_num >= NUM_SEGMENTS )
+      {
+        m_step_num = 0;
+      }
+  
+      m_next_step_time_stamp_ms = time_ms + m_step_length_ms;
+  
+      return true;
     }
+  }
+  else if( overridden_segment != m_step_num )
+  {
+    m_step_num = overridden_segment;
 
     m_next_step_time_stamp_ms = time_ms + m_step_length_ms;
-
+  
     return true;
   }
-
-  return false;
+  
+   return false;
  }
 
-bool BUTTON_STRIP::update_free_play( uint32_t time_ms, uint32_t& activated_segment )
+bool BUTTON_STRIP::update_free_play( uint32_t time_ms, uint32_t& activated_segment, int overridden_segment )
 {
   bool step_triggered = false;
-  bool update_leds    = update_steps( time_ms );
+  bool update_leds    = update_steps( time_ms, overridden_segment );
   
   if( !m_buttons_locked )
   {
@@ -90,7 +101,7 @@ bool BUTTON_STRIP::update_free_play( uint32_t time_ms, uint32_t& activated_segme
 
 bool BUTTON_STRIP::update_play_sequence( uint32_t time_ms, uint32_t& activated_segment )
 {
-  bool update_leds    = update_steps( time_ms );
+  bool update_leds    = update_steps( time_ms, -1 );
   bool step_triggered = false;
   
   const SEQUENCE_EVENT& current_event = m_sequence_events[m_current_seq_event];
@@ -149,7 +160,7 @@ void BUTTON_STRIP::clear_sequence()
   m_current_seq_event       = 0;  
 }
 
-bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
+bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment, int overridden_segment )
 {
   bool step_triggered = false;
 
@@ -158,7 +169,7 @@ bool BUTTON_STRIP::update( uint32_t time_ms, uint32_t& activated_segment )
     case MODE::FREE_PLAY:
     case MODE::RECORD_SEQ:
     {
-      step_triggered = update_free_play( time_ms, activated_segment );
+      step_triggered = update_free_play( time_ms, activated_segment, overridden_segment );
 
       if( m_mode == MODE::RECORD_SEQ && step_triggered )
       {
