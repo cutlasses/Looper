@@ -1,5 +1,7 @@
 # Looper
 
+[![Eurorack Looper](https://img.youtube.com/vi/Ur3xYh8PTQg/0.jpg)](https://www.youtube.com/watch?v=Ur3xYh8PTQg)
+
 https://youtu.be/Ur3xYh8PTQg
 
 ##What is it?
