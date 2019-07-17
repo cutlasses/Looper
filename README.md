@@ -3,13 +3,13 @@
 [![Eurorack Looper](https://img.youtube.com/vi/Ur3xYh8PTQg/0.jpg)](https://www.youtube.com/watch?v=Ur3xYh8PTQg)
 
 
-##What is it?
+## What is it?
 
 A looper module in the eurorack format inspired by the MLR app which ran with the monome. It records audio to an SD card, so is not limited by RAM constraints. It supports unlimited overdubs, only limited by headroom (e.g. if you layer over too many overdubs, the audio will begin to digitally clip). Once the loop is recorded, you can switch from Record Mode to Play Mode. This allows you to ‘cut’ the loop using the 8 buttons. Each button will jump to a section of the loop, essentially dividing the loop into 8 equal size segments.
 
  
 
-##How does it work?
+## How does it work?
 
 The version shown in this video uses Version 2.0 of my Teensy 3.5 based audio board. This uses the in-built ADC and DAC to process audio. The audio is recorded to SD card. As SD cards are rather slow, especially when writing, I need to use 2 circular buffers. One for reading audio, and one for writing. SD cards are slightly unpredictable in terms of read and write speed (e.g. writing the same size block can take varying amounts of time each time you do it), I had to experiment to get buffer sizes that worked. These may need to change when using other SD cards.
 
